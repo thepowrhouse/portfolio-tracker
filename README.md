@@ -71,3 +71,24 @@ A comprehensive, multi-broker stock portfolio tracking dashboard built with Next
 3. Drag and drop your Broker's Holdings Snapshot CSV.
    - *Tip for Groww Users:* Upload your regular Snapshot CSV first to lock in your exact quantities, then upload your Order History CSV to compute your exact XIRR!
 4. The dashboard will automatically calculate your live net worth, sector allocation, and run a full technical analysis on your portfolio.
+
+## Deploying to Railway
+
+This project is fully configured to be deployed on [Railway.app](https://railway.app/). Because it's a monorepo, you will create two separate services in Railway from the same GitHub repository.
+
+### 1. Deploy the Backend (FastAPI)
+1. In your Railway project, click **New** -> **GitHub Repo** and select this repository.
+2. Go to the new service's **Settings**.
+3. Under **Build**, set the **Root Directory** to `/backend`.
+4. Railway will automatically detect the Python environment and the `Procfile` and deploy your FastAPI server.
+5. Go to the **Variables** tab and optionally add `ALLOWED_ORIGINS=*` (or set it to your frontend domain).
+6. Go to the **Settings** tab, scroll down to **Networking**, and click **Generate Domain**. Copy this domain URL (e.g., `https://backend-production.up.railway.app`).
+
+### 2. Deploy the Frontend (Next.js)
+1. Click **New** -> **GitHub Repo** again and select this repository.
+2. Go to the new service's **Settings**.
+3. Under **Build**, set the **Root Directory** to `/frontend`.
+4. Go to the **Variables** tab and add a new variable:
+   - `NEXT_PUBLIC_API_URL`: Paste the backend domain URL you copied in the previous step (without a trailing slash).
+5. Go to the **Settings** tab, scroll down to **Networking**, and click **Generate Domain**.
+6. Click the generated frontend domain to view your live application!
