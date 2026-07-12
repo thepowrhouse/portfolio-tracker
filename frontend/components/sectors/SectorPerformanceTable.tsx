@@ -12,6 +12,7 @@ interface IndustryAgg {
   sum_1w: number; c_1w: number;
   sum_1m: number; c_1m: number;
   sum_3m: number; c_3m: number;
+  sum_6m: number; c_6m: number;
   sum_1y: number; c_1y: number;
   market_return_1d?: number;
   market_return_1w?: number;
