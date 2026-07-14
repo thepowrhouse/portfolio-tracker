@@ -62,12 +62,17 @@ const aggregateHoldings = (holdings: PortfolioHolding[]): AggregatedHolding[] =>
   return Array.from(map.values());
 };
 
-export function HoldingsTable() {
+export function HoldingsTable({ 
+  activeHorizon, 
+  setActiveHorizon 
+}: { 
+  activeHorizon: "short" | "mid" | "long", 
+  setActiveHorizon: (h: "short" | "mid" | "long") => void 
+}) {
   const { portfolio, recommendations, isLoading, isAnalyzing, lastUpdated } = usePortfolio();
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [localHoldings, setLocalHoldings] = useState(portfolio?.holdings || []);
   const [activeTab, setActiveTab] = useState<string>("All");
-  const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
   const [sortConfig, setSortConfig] = useState<{
     key: "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr";
     direction: "asc" | "desc";

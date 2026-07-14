@@ -11,6 +11,7 @@ import { useState } from "react";
 export default function DashboardPage() {
   const { portfolio, lastUpdated, refreshPortfolio } = usePortfolio();
   const [activeView, setActiveView] = useState<"Holdings" | "Sectors">("Holdings");
+  const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -39,7 +40,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <NetWorthCard />
-          <AssetAllocation />
+          <AssetAllocation activeHorizon={activeHorizon} />
           <CSVUploader />
         </div>
 
@@ -72,7 +73,7 @@ export default function DashboardPage() {
           </div>
           
           {activeView === "Holdings" ? (
-            <HoldingsTable />
+            <HoldingsTable activeHorizon={activeHorizon} setActiveHorizon={setActiveHorizon} />
           ) : (
             <SectorPerformanceTable />
           )}

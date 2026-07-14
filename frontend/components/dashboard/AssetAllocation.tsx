@@ -10,9 +10,13 @@ const INDUSTRY_COLORS = [
   "#06b6d4", "#8b5cf6", "#f97316", "#14b8a6", "#6366f1", "#f43f5e"
 ];
 
-export function AssetAllocation() {
+interface AssetAllocationProps {
+  activeHorizon?: "short" | "mid" | "long";
+}
+
+export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps) {
   const { portfolio, recommendations } = usePortfolio();
-  const [view, setView] = useState<"broker" | "industry" | "performance">("broker");
+  const [view, setView] = useState<"broker" | "industry" | "performance" | "action">("broker");
 
   const data = useMemo(() => {
     if (!portfolio) return [];
@@ -71,9 +75,28 @@ export function AssetAllocation() {
       if (lossCount > 0) res.push({ name: "In Loss", value: lossCount, color: "#ef4444" });
       if (neutralCount > 0) res.push({ name: "Neutral", value: neutralCount, color: "#94a3b8" });
       return res;
+    } else if (view === "action") {
+      let buyCount = 0;
+      let holdCount = 0;
+      let sellCount = 0;
+      
+      portfolio.holdings.forEach(h => {
+        const rec = recommendations?.find(r => r.ticker === h.ticker);
+        const action = rec?.horizons?.[activeHorizon]?.recommendation;
+        
+        if (action === "BUY") buyCount++;
+        else if (action === "SELL") sellCount++;
+        else if (action === "HOLD") holdCount++;
+      });
+      
+      const res = [];
+      if (buyCount > 0) res.push({ name: "BUY", value: buyCount, color: "#10b981" }); // emerald-500
+      if (holdCount > 0) res.push({ name: "HOLD", value: holdCount, color: "#f59e0b" }); // amber-500
+      if (sellCount > 0) res.push({ name: "SELL", value: sellCount, color: "#ef4444" }); // red-500
+      return res;
     }
     return [];
-  }, [portfolio, recommendations, view]);
+  }, [portfolio, recommendations, view, activeHorizon]);
 
   const performanceStats = useMemo(() => {
     if (!portfolio || view !== "performance") return null;
@@ -120,6 +143,14 @@ export function AssetAllocation() {
           >
             Performance
           </button>
+          <button
+            onClick={() => setView("action")}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === "action" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-300"
+            }`}
+          >
+            Action
+          </button>
         </div>
       </div>
       
@@ -149,7 +180,7 @@ export function AssetAllocation() {
                   fontSize: "12px",
                 }}
                 formatter={(value: number) => 
-                  view === "performance" ? [value, "Count"] : `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                  view === "performance" || view === "action" ? [value, "Count"] : `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
                 }
               />
             </PieChart>
