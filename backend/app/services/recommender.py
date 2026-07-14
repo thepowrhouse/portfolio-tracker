@@ -186,10 +186,29 @@ def generate_recommendation(
         else:
             summary = f"Mixed signals suggest maintaining current position for the {horizon}-term. Wait for clearer direction."
             
+        # Determine trend for this horizon
+        horizon_trend = "sideways"
+        if horizon == "short":
+            if technical.macd_daily is not None and technical.macd_signal_daily is not None:
+                horizon_trend = "uptrend" if technical.macd_daily > technical.macd_signal_daily else "downtrend"
+            else:
+                horizon_trend = technical.trend or "sideways"
+        elif horizon == "mid":
+            if technical.macd_weekly is not None and technical.macd_signal_weekly is not None:
+                horizon_trend = "uptrend" if technical.macd_weekly > technical.macd_signal_weekly else "downtrend"
+            else:
+                horizon_trend = technical.trend or "sideways"
+        elif horizon == "long":
+            if technical.macd_monthly is not None and technical.macd_signal_monthly is not None:
+                horizon_trend = "uptrend" if technical.macd_monthly > technical.macd_signal_monthly else "downtrend"
+            else:
+                horizon_trend = technical.trend or "sideways"
+            
         horizons[horizon] = HorizonVerdict(
             horizon=horizon,
             recommendation=recommendation,
             confidence_score=round(confidence, 1),
+            trend=horizon_trend,
             rationale=rationale,
             overall_summary=summary
         )

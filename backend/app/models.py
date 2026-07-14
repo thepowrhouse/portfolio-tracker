@@ -124,6 +124,7 @@ class HorizonVerdict(BaseModel):
     horizon: str  # "short", "mid", "long"
     recommendation: Recommendation
     confidence_score: float  # 0-100
+    trend: Optional[str] = None
     rationale: List[VerdictRationale]
     overall_summary: str
 

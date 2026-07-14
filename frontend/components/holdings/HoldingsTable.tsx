@@ -404,15 +404,15 @@ export function HoldingsTable() {
                           >
                             {rec.horizons[activeHorizon].recommendation}
                           </span>
-                          {rec.technical.trend && (
+                          {rec.horizons[activeHorizon].trend && (
                             <span className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-0.5 ${
-                              rec.technical.trend === "uptrend" ? "text-emerald-500" :
-                              rec.technical.trend === "downtrend" ? "text-red-500" :
+                              rec.horizons[activeHorizon].trend === "uptrend" ? "text-emerald-500" :
+                              rec.horizons[activeHorizon].trend === "downtrend" ? "text-red-500" :
                               "text-amber-500"
                             }`}>
-                              {rec.technical.trend}
-                              {rec.technical.trend === "uptrend" ? "↗" :
-                               rec.technical.trend === "downtrend" ? "↘" : "→"}
+                              {rec.horizons[activeHorizon].trend}
+                              {rec.horizons[activeHorizon].trend === "uptrend" ? "↗" :
+                               rec.horizons[activeHorizon].trend === "downtrend" ? "↘" : "→"}
                             </span>
                           )}
                         </div>

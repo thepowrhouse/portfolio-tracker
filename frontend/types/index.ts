@@ -85,6 +85,7 @@ export interface HorizonVerdict {
   horizon: string;
   recommendation: Recommendation;
   confidence_score: number;
+  trend?: string | null;
   rationale: VerdictRationale[];
   overall_summary: string;
 }
