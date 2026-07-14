@@ -14,24 +14,47 @@ def score_technical(tech: TechnicalIndicators) -> tuple[float, List[str]]:
     points = []
     score = 0.0
     
-    if tech.rsi_14 is not None:
-        if tech.rsi_14 < 30:
-            score += 0.4
-            points.append(f"RSI at {tech.rsi_14} indicates oversold conditions")
-        elif tech.rsi_14 > 70:
-            score -= 0.4
-            points.append(f"RSI at {tech.rsi_14} indicates overbought conditions")
-        elif 40 <= tech.rsi_14 <= 60:
-            score += 0.1
-            points.append(f"RSI at {tech.rsi_14} shows neutral momentum")
-    
-    if tech.macd is not None and tech.macd_signal is not None:
-        if tech.macd > tech.macd_signal:
+    # --- RSI ---
+    if tech.rsi_14_daily is not None:
+        if tech.rsi_14_daily < 30:
             score += 0.2
-            points.append("MACD bullish crossover detected")
-        else:
+            points.append(f"Daily RSI at {tech.rsi_14_daily} indicates short-term oversold conditions")
+        elif tech.rsi_14_daily > 70:
             score -= 0.2
-            points.append("MACD bearish crossover detected")
+            points.append(f"Daily RSI at {tech.rsi_14_daily} indicates short-term overbought conditions")
+    
+    if tech.rsi_14_weekly is not None:
+        if tech.rsi_14_weekly < 30:
+            score += 0.15
+            points.append(f"Weekly RSI at {tech.rsi_14_weekly} suggests medium-term value")
+        elif tech.rsi_14_weekly > 70:
+            score -= 0.15
+            points.append(f"Weekly RSI at {tech.rsi_14_weekly} warns of medium-term overextension")
+
+    if tech.rsi_14_monthly is not None:
+        if tech.rsi_14_monthly < 30:
+            score += 0.1
+            points.append(f"Monthly RSI at {tech.rsi_14_monthly} indicates massive secular oversold levels")
+        elif tech.rsi_14_monthly > 70:
+            score -= 0.1
+            points.append(f"Monthly RSI at {tech.rsi_14_monthly} indicates massive secular overbought levels")
+            
+    # --- MACD ---
+    if tech.macd_daily is not None and tech.macd_signal_daily is not None:
+        if tech.macd_daily > tech.macd_signal_daily:
+            score += 0.1
+            points.append("Daily MACD bullish crossover detected")
+        else:
+            score -= 0.1
+            points.append("Daily MACD bearish crossover detected")
+            
+    if tech.macd_weekly is not None and tech.macd_signal_weekly is not None:
+        if tech.macd_weekly > tech.macd_signal_weekly:
+            score += 0.1
+            points.append("Weekly MACD bullish momentum")
+        else:
+            score -= 0.1
+            points.append("Weekly MACD bearish momentum")
     
     if tech.bollinger_position == "below":
         score += 0.2

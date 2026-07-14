@@ -65,9 +65,23 @@ export function StockDetailPanel({ recommendation }: Props) {
             <Activity className="h-4 w-4 text-blue-400" />
             <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Technical</h4>
           </div>
-          <MetricRow label="RSI (14)" value={technical.rsi_14} />
-          <MetricRow label="MACD" value={technical.macd} />
-          <MetricRow label="MACD Signal" value={technical.macd_signal} />
+          <div className="mb-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">RSI (14)</span>
+            <div className="pl-2 border-l border-slate-800/50">
+              <MetricRow label="Daily" value={technical.rsi_14_daily} />
+              <MetricRow label="Weekly" value={technical.rsi_14_weekly} />
+              <MetricRow label="Monthly" value={technical.rsi_14_monthly} />
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">MACD</span>
+            <div className="pl-2 border-l border-slate-800/50">
+              <MetricRow label="Daily (MACD/Sig)" value={`${technical.macd_daily} / ${technical.macd_signal_daily}`} />
+              <MetricRow label="Weekly (MACD/Sig)" value={`${technical.macd_weekly} / ${technical.macd_signal_weekly}`} />
+              <MetricRow label="Monthly (MACD/Sig)" value={`${technical.macd_monthly} / ${technical.macd_signal_monthly}`} />
+            </div>
+          </div>
           <MetricRow label="Bollinger Position" value={technical.bollinger_position} />
           <MetricRow label="SMA 50" value={technical.sma_50} />
           <MetricRow label="SMA 200" value={technical.sma_200} />

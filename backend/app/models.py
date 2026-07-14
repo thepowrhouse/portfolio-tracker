@@ -71,9 +71,15 @@ class PortfolioState(BaseModel):
 
 class TechnicalIndicators(BaseModel):
     ticker: str
-    rsi_14: Optional[float] = None
-    macd: Optional[float] = None
-    macd_signal: Optional[float] = None
+    rsi_14_daily: Optional[float] = None
+    rsi_14_weekly: Optional[float] = None
+    rsi_14_monthly: Optional[float] = None
+    macd_daily: Optional[float] = None
+    macd_signal_daily: Optional[float] = None
+    macd_weekly: Optional[float] = None
+    macd_signal_weekly: Optional[float] = None
+    macd_monthly: Optional[float] = None
+    macd_signal_monthly: Optional[float] = None
     bollinger_upper: Optional[float] = None
     bollinger_lower: Optional[float] = None
     bollinger_position: Optional[str] = None  # "above", "mid", "below"

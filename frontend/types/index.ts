@@ -28,9 +28,15 @@ export interface PortfolioState {
 
 export interface TechnicalIndicators {
   ticker: string;
-  rsi_14: number | null;
-  macd: number | null;
-  macd_signal: number | null;
+  rsi_14_daily: number | null;
+  rsi_14_weekly: number | null;
+  rsi_14_monthly: number | null;
+  macd_daily: number | null;
+  macd_signal_daily: number | null;
+  macd_weekly: number | null;
+  macd_signal_weekly: number | null;
+  macd_monthly: number | null;
+  macd_signal_monthly: number | null;
   bollinger_upper: number | null;
   bollinger_lower: number | null;
   bollinger_position: string | null;

@@ -117,6 +117,16 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
             
             rsi = compute_rsi(close)
             macd, macd_signal = compute_macd(close)
+            
+            # Weekly (W-FRI)
+            close_weekly = close.resample('W-FRI').last().dropna()
+            rsi_weekly = compute_rsi(close_weekly) if len(close_weekly) > 14 else None
+            macd_weekly, macd_signal_weekly = compute_macd(close_weekly) if len(close_weekly) > 26 else (None, None)
+            
+            # Monthly (ME)
+            close_monthly = close.resample('ME').last().dropna()
+            rsi_monthly = compute_rsi(close_monthly) if len(close_monthly) > 14 else None
+            macd_monthly, macd_signal_monthly = compute_macd(close_monthly) if len(close_monthly) > 26 else (None, None)
             bb_upper, bb_lower, bb_pos = compute_bollinger(close)
             sma_50 = round(close.rolling(50).mean().iloc[-1], 2)
             sma_200 = round(close.rolling(200).mean().iloc[-1], 2) if len(close) >= 200 else None
@@ -153,9 +163,15 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
             
             return TechnicalIndicators(
                 ticker=ticker,
-                rsi_14=rsi,
-                macd=macd,
-                macd_signal=macd_signal,
+                rsi_14_daily=rsi,
+                rsi_14_weekly=rsi_weekly,
+                rsi_14_monthly=rsi_monthly,
+                macd_daily=macd,
+                macd_signal_daily=macd_signal,
+                macd_weekly=macd_weekly,
+                macd_signal_weekly=macd_signal_weekly,
+                macd_monthly=macd_monthly,
+                macd_signal_monthly=macd_signal_monthly,
                 bollinger_upper=bb_upper,
                 bollinger_lower=bb_lower,
                 bollinger_position=bb_pos,
