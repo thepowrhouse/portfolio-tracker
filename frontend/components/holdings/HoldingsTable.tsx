@@ -67,6 +67,7 @@ export function HoldingsTable() {
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [localHoldings, setLocalHoldings] = useState(portfolio?.holdings || []);
   const [activeTab, setActiveTab] = useState<string>("All");
+  const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
   const [sortConfig, setSortConfig] = useState<{
     key: "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr";
     direction: "asc" | "desc";
@@ -116,8 +117,11 @@ export function HoldingsTable() {
         let bValue: any;
 
         if (sortConfig.key === "action") {
-          aValue = getRecommendation(a.ticker)?.recommendation || "";
-          bValue = getRecommendation(b.ticker)?.recommendation || "";
+          const aRec = recommendations.find((r) => r.ticker === a.ticker)?.horizons?.[activeHorizon]?.recommendation;
+          const bRec = recommendations.find((r) => r.ticker === b.ticker)?.horizons?.[activeHorizon]?.recommendation;
+          const rank = { BUY: 1, HOLD: 2, SELL: 3 };
+          aValue = rank[aRec as keyof typeof rank] || 99;
+          bValue = rank[bRec as keyof typeof rank] || 99;
         } else if (sortConfig.key === "broker") {
           aValue = a.brokers.join(", ");
           bValue = b.brokers.join(", ");
@@ -153,7 +157,7 @@ export function HoldingsTable() {
       });
     }
     return sortableItems;
-  }, [aggregatedHoldings, sortConfig, recommendations]);
+  }, [aggregatedHoldings, sortConfig, recommendations, activeHorizon]);
 
   const handleSort = (key: "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr") => {
     let direction: "asc" | "desc" = "desc";
@@ -198,20 +202,44 @@ export function HoldingsTable() {
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-      <div className="border-b border-slate-800 px-4 py-3 flex gap-4">
-        {["All", "Zerodha", "Groww", "INDmoney"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              activeTab === tab
-                ? "bg-slate-800 text-slate-200"
-                : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="border-b border-slate-800 px-4 py-3 flex justify-between items-center flex-wrap gap-4">
+        <div className="flex gap-2">
+          {["All", "Zerodha", "Groww", "INDmoney"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === tab
+                  ? "bg-slate-800 text-slate-200"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Horizon:</span>
+          <div className="flex bg-slate-800/50 p-1 rounded-lg">
+            {[
+              { id: "short", label: "Short (1-3m)" },
+              { id: "mid", label: "Mid (6-12m)" },
+              { id: "long", label: "Long (1-5y)" }
+            ].map((horizon) => (
+              <button
+                key={horizon.id}
+                onClick={() => setActiveHorizon(horizon.id as any)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  activeHorizon === horizon.id
+                    ? "bg-blue-500 text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
+                }`}
+              >
+                {horizon.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -363,18 +391,18 @@ export function HoldingsTable() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      {rec ? (
+                      {rec && rec.horizons && rec.horizons[activeHorizon] ? (
                         <div className="flex flex-col items-center gap-1">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              rec.recommendation === "BUY"
+                              rec.horizons[activeHorizon].recommendation === "BUY"
                                 ? "bg-emerald-500/10 text-emerald-400"
-                                : rec.recommendation === "SELL"
+                                : rec.horizons[activeHorizon].recommendation === "SELL"
                                 ? "bg-red-500/10 text-red-400"
                                 : "bg-amber-500/10 text-amber-400"
                             }`}
                           >
-                            {rec.recommendation}
+                            {rec.horizons[activeHorizon].recommendation}
                           </span>
                           {rec.technical.trend && (
                             <span className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-0.5 ${
@@ -407,7 +435,7 @@ export function HoldingsTable() {
                   {isExpanded && rec && (
                     <tr key={`${holding.id}-detail`}>
                       <td colSpan={11} className="p-0">
-                        <StockDetailPanel recommendation={rec} />
+                        <StockDetailPanel recommendation={rec} activeHorizon={activeHorizon} />
                       </td>
                     </tr>
                   )}

@@ -81,14 +81,19 @@ export interface VerdictRationale {
   points: string[];
 }
 
+export interface HorizonVerdict {
+  horizon: string;
+  recommendation: Recommendation;
+  confidence_score: number;
+  rationale: VerdictRationale[];
+  overall_summary: string;
+}
+
 export interface StockRecommendation {
   ticker: string;
   company_name: string;
-  recommendation: Recommendation;
-  confidence_score: number;
   technical: TechnicalIndicators;
   fundamental: FundamentalMetrics;
   sentiment: SentimentAnalysis;
-  rationale: VerdictRationale[];
-  overall_summary: string;
+  horizons: { [key: string]: HorizonVerdict };
 }

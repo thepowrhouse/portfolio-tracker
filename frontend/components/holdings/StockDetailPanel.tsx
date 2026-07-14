@@ -5,10 +5,12 @@ import { TrendingUp, TrendingDown, Minus, Activity, BarChart3, Newspaper } from 
 
 interface Props {
   recommendation: StockRecommendation;
+  activeHorizon: string;
 }
 
-export function StockDetailPanel({ recommendation }: Props) {
-  const { technical, fundamental, sentiment, rationale, overall_summary } = recommendation;
+export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
+  const { technical, fundamental, sentiment } = recommendation;
+  const horizonVerdict = recommendation.horizons?.[activeHorizon];
 
   const MetricRow = ({ label, value, suffix = "" }: { label: string; value: string | number | null; suffix?: string }) => (
     <div className="flex justify-between py-1.5 border-b border-slate-800/50 last:border-0">
@@ -203,46 +205,48 @@ export function StockDetailPanel({ recommendation }: Props) {
       </div>
 
       {/* Verdict Panel */}
-      <div className={`
-        mt-4 rounded-lg border-l-4 p-4
-        ${recommendation.recommendation === "BUY" 
-          ? "border-l-emerald-500 bg-emerald-500/5" 
-          : recommendation.recommendation === "SELL"
-          ? "border-l-red-500 bg-red-500/5"
-          : "border-l-amber-500 bg-amber-500/5"
-        }
-      `}>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className={`
-            text-sm font-semibold
-            ${recommendation.recommendation === "BUY" 
-              ? "text-emerald-400" 
-              : recommendation.recommendation === "SELL"
-              ? "text-red-400"
-              : "text-amber-400"
-            }
-          `}>
-            Verdict: {recommendation.recommendation} ({recommendation.confidence_score}% confidence)
-          </h4>
+      {horizonVerdict && (
+        <div className={`
+          mt-4 rounded-lg border-l-4 p-4
+          ${horizonVerdict.recommendation === "BUY" 
+            ? "border-l-emerald-500 bg-emerald-500/5" 
+            : horizonVerdict.recommendation === "SELL"
+            ? "border-l-red-500 bg-red-500/5"
+            : "border-l-amber-500 bg-amber-500/5"
+          }
+        `}>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className={`
+              text-sm font-semibold
+              ${horizonVerdict.recommendation === "BUY" 
+                ? "text-emerald-400" 
+                : horizonVerdict.recommendation === "SELL"
+                ? "text-red-400"
+                : "text-amber-400"
+              }
+            `}>
+              Verdict ({horizonVerdict.horizon}-term): {horizonVerdict.recommendation} ({horizonVerdict.confidence_score}% confidence)
+            </h4>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed mb-3">{horizonVerdict.overall_summary}</p>
+          
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {horizonVerdict.rationale.map((r) => (
+              <div key={r.pillar} className="rounded bg-slate-950/50 p-3">
+                <h5 className="text-xs font-semibold text-slate-500 mb-1.5">{r.pillar}</h5>
+                <ul className="space-y-1">
+                  {r.points.map((point, i) => (
+                    <li key={i} className="text-xs text-slate-400 leading-relaxed">• {point}</li>
+                  ))}
+                  {r.points.length === 0 && (
+                    <li className="text-xs text-slate-600">No significant signals</li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-xs text-slate-400 leading-relaxed mb-3">{overall_summary}</p>
-        
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {rationale.map((r) => (
-            <div key={r.pillar} className="rounded bg-slate-950/50 p-3">
-              <h5 className="text-xs font-semibold text-slate-500 mb-1.5">{r.pillar}</h5>
-              <ul className="space-y-1">
-                {r.points.map((point, i) => (
-                  <li key={i} className="text-xs text-slate-400 leading-relaxed">• {point}</li>
-                ))}
-                {r.points.length === 0 && (
-                  <li className="text-xs text-slate-600">No significant signals</li>
-                )}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

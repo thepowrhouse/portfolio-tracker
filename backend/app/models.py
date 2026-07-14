@@ -120,13 +120,17 @@ class VerdictRationale(BaseModel):
     pillar: str  # "Technical", "Fundamental", "Sentiment"
     points: List[str]
 
+class HorizonVerdict(BaseModel):
+    horizon: str  # "short", "mid", "long"
+    recommendation: Recommendation
+    confidence_score: float  # 0-100
+    rationale: List[VerdictRationale]
+    overall_summary: str
+
 class StockRecommendation(BaseModel):
     ticker: str
     company_name: str
-    recommendation: Recommendation
-    confidence_score: float  # 0-100
     technical: TechnicalIndicators
     fundamental: FundamentalMetrics
     sentiment: SentimentAnalysis
-    rationale: List[VerdictRationale]
-    overall_summary: str
+    horizons: dict[str, HorizonVerdict]
