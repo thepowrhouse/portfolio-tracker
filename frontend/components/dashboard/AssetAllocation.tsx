@@ -178,7 +178,9 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
                   border: "1px solid #1e293b",
                   borderRadius: "8px",
                   fontSize: "12px",
+                  color: "#e2e8f0",
                 }}
+                itemStyle={{ color: "#e2e8f0" }}
                 formatter={(value: number) => 
                   view === "performance" || view === "action" ? [value, "Count"] : `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
                 }
