@@ -89,6 +89,19 @@ export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
           <MetricRow label="SMA 200" value={technical.sma_200} />
           <MetricRow label="Trend" value={technical.trend} />
           <MetricRow label="Chart Pattern" value={technical.chart_pattern || "None"} />
+          
+          <div className="mt-2 pt-2 border-t border-slate-800/50">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Volume Analysis</span>
+            <div className="pl-2 border-l border-slate-800/50">
+              <MetricRow label="20-Day VWAP" value={technical.vwap_20 ?? null} />
+              <MetricRow 
+                label="OBV Trend" 
+                value={technical.obv_trend 
+                  ? (technical.obv_trend.charAt(0).toUpperCase() + technical.obv_trend.slice(1)) 
+                  : null} 
+              />
+            </div>
+          </div>
         </div>
 
         {/* Fundamental Column */}

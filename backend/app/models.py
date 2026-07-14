@@ -71,6 +71,7 @@ class PortfolioState(BaseModel):
 
 class TechnicalIndicators(BaseModel):
     ticker: str
+    current_price: Optional[float] = None
     rsi_14_daily: Optional[float] = None
     rsi_14_weekly: Optional[float] = None
     rsi_14_monthly: Optional[float] = None
@@ -94,6 +95,8 @@ class TechnicalIndicators(BaseModel):
     return_1y: Optional[float] = None
     all_time_high: Optional[float] = None
     chart_pattern: Optional[str] = None
+    obv_trend: Optional[str] = None
+    vwap_20: Optional[float] = None
 
 class FundamentalMetrics(BaseModel):
     ticker: str

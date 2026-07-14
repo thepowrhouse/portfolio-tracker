@@ -28,6 +28,7 @@ export interface PortfolioState {
 
 export interface TechnicalIndicators {
   ticker: string;
+  current_price: number | null;
   rsi_14_daily: number | null;
   rsi_14_weekly: number | null;
   rsi_14_monthly: number | null;
@@ -51,6 +52,8 @@ export interface TechnicalIndicators {
   return_1y?: number | null;
   all_time_high?: number | null;
   chart_pattern?: string | null;
+  obv_trend?: "accumulation" | "distribution" | null;
+  vwap_20?: number | null;
 }
 
 export interface FundamentalMetrics {

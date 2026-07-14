@@ -35,6 +35,21 @@ def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, Lis
         elif tech.bollinger_position == "above":
             score -= 0.2
             points.append("Price above upper Bollinger Band suggests overextension")
+            
+        if tech.vwap_20 and tech.current_price:
+            if tech.current_price > tech.vwap_20:
+                score += 0.3
+                points.append(f"Price ({tech.current_price}) is above 20-day VWAP ({tech.vwap_20}) indicating short-term buying pressure")
+            else:
+                score -= 0.3
+                points.append(f"Price ({tech.current_price}) is below 20-day VWAP ({tech.vwap_20}) indicating short-term selling pressure")
+                
+        if tech.obv_trend == "accumulation":
+            score += 0.2
+            points.append("On-Balance Volume (OBV) trend suggests institutional accumulation")
+        elif tech.obv_trend == "distribution":
+            score -= 0.2
+            points.append("On-Balance Volume (OBV) trend suggests institutional distribution")
 
     elif horizon == "mid":
         if tech.rsi_14_weekly is not None:
@@ -57,6 +72,13 @@ def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, Lis
         elif tech.trend == "downtrend":
             score -= 0.3
             points.append("SMA 50/200 confirms medium-term downtrend")
+            
+        if tech.obv_trend == "accumulation":
+            score += 0.3
+            points.append("Medium-term volume flow indicates steady accumulation")
+        elif tech.obv_trend == "distribution":
+            score -= 0.3
+            points.append("Medium-term volume flow indicates steady distribution")
 
     elif horizon == "long":
         if tech.rsi_14_monthly is not None:
@@ -72,6 +94,13 @@ def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, Lis
         elif tech.trend == "downtrend":
             score -= 0.5
             points.append("Long-term moving averages confirm structural downtrend")
+            
+        if tech.obv_trend == "accumulation":
+            score += 0.2
+            points.append("Long-term volume trends support bullish accumulation phase")
+        elif tech.obv_trend == "distribution":
+            score -= 0.2
+            points.append("Long-term volume trends support bearish distribution phase")
 
     return score, points
 

@@ -38,6 +38,29 @@ def compute_bollinger(prices: pd.Series, period: int = 20) -> tuple:
         pos = "mid"
     return round(upper.iloc[-1], 2), round(lower.iloc[-1], 2), pos
 
+def compute_obv(close: pd.Series, volume: pd.Series) -> Optional[str]:
+    if len(close) < 20:
+        return None
+    # Calculate daily OBV
+    obv = (np.sign(close.diff()) * volume).fillna(0).cumsum()
+    # Check trend by comparing current OBV to its 20-day SMA
+    obv_sma20 = obv.rolling(20).mean()
+    if pd.isna(obv_sma20.iloc[-1]):
+        return None
+    if obv.iloc[-1] > obv_sma20.iloc[-1]:
+        return "accumulation"
+    else:
+        return "distribution"
+
+def compute_vwap(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, period: int = 20) -> Optional[float]:
+    if len(close) < period:
+        return None
+    typical_price = (high + low + close) / 3
+    rolling_vwap = (typical_price * volume).rolling(window=period).sum() / volume.rolling(window=period).sum()
+    if pd.isna(rolling_vwap.iloc[-1]):
+        return None
+    return round(rolling_vwap.iloc[-1], 2)
+
 def detect_chart_pattern(prices: pd.Series) -> Optional[str]:
     if len(prices) < 60:
         return None
@@ -113,10 +136,15 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
                 return TechnicalIndicators(ticker=ticker)
             
             close = hist["Close"]
+            high = hist["High"]
+            low = hist["Low"]
+            volume = hist["Volume"]
             last_price = close.iloc[-1]
             
             rsi = compute_rsi(close)
             macd, macd_signal = compute_macd(close)
+            obv_trend = compute_obv(close, volume)
+            vwap_20 = compute_vwap(high, low, close, volume)
             
             # Weekly (W-FRI)
             close_weekly = close.resample('W-FRI').last().dropna()
@@ -163,6 +191,7 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
             
             return TechnicalIndicators(
                 ticker=ticker,
+                current_price=round(last_price, 2),
                 rsi_14_daily=rsi,
                 rsi_14_weekly=rsi_weekly,
                 rsi_14_monthly=rsi_monthly,
@@ -184,9 +213,12 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
                 return_3m=return_3m,
                 return_6m=return_6m,
                 return_1y=return_1y,
-                all_time_high=all_time_high,
-                chart_pattern=chart_pattern
+                all_time_high=round(all_time_high, 2) if pd.notna(all_time_high) else None,
+                chart_pattern=chart_pattern,
+                obv_trend=obv_trend,
+                vwap_20=vwap_20
             )
+            
         except Exception as e:
             if attempt < 2:
                 time.sleep(1)
