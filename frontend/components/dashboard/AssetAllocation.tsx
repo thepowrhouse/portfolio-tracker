@@ -114,11 +114,11 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 h-full flex flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-          Asset Allocation
+      <div className="mb-4 flex flex-col 2xl:flex-row items-start 2xl:items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 shrink-0">
+          Portfolio Breakdown
         </h3>
-        <div className="flex bg-slate-800/50 rounded-lg p-1">
+        <div className="flex flex-wrap bg-slate-800/50 rounded-lg p-1 gap-1">
           <button
             onClick={() => setView("broker")}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
