@@ -91,19 +91,24 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
     date_col = actual_cols.get("order_execution_time") or actual_cols.get("trade_date")
     
     if not symbol_col or not date_col or not price_col or not qty_col:
-        raise CSVParseError(f"Missing required columns in Zerodha Tradebook. Found: {list(df.columns)}")
-        
-    class AggHolding:
+        raise CSVParseError(f"Missing required columns in Zerodha Tradebook. Found: {list(df.columns)}")    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
             self.invested = 0.0
             self.cashflows = []
+            self.has_buy = False
+            self.invalid_cashflows = False
             
     agg_map = {}
+    transactions = []
     
     for _, row in df.iterrows():
         try:
+            status = str(row.get(actual_cols.get("order status", ""), "")).strip().lower()
+            if status and "executed" not in status and "success" not in status:
+                continue
+
             ticker = str(row[symbol_col]).strip().upper()
             if not ticker:
                 continue
@@ -113,36 +118,45 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
             val = qty * price
             t_type = str(row[type_col]).strip().upper()
             
-            # e.g., 2025-11-19T13:21:39 or 2025-11-19
             date_str = str(row[date_col]).strip()
             try:
                 dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
             except ValueError:
-                dt = datetime.strptime(date_str, "%Y-%m-%d") # fallback
-                
-            if ticker not in agg_map:
-                agg_map[ticker] = AggHolding(ticker)
-                
-            agg = agg_map[ticker]
+                dt = datetime.strptime(date_str, "%Y-%m-%d")
             
-            if t_type == "BUY":
-                agg.qty += qty
-                agg.invested += val
-                agg.cashflows.append(CashFlow(date=dt, amount=-val))
-            elif t_type == "SELL":
-                if agg.qty > 0:
-                    avg_cost_before = agg.invested / agg.qty
-                    agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
-                agg.qty = max(0.0, agg.qty - qty)
-                agg.cashflows.append(CashFlow(date=dt, amount=val))
-                
+            name = ticker
+            
+            transactions.append((dt, ticker, qty, val, t_type, name))
         except Exception:
             continue
             
+    transactions.sort(key=lambda x: x[0])
+    
+    for dt, ticker, qty, val, t_type, name in transactions:
+        if ticker not in agg_map:
+            agg_map[ticker] = AggHolding(name)
+            
+        agg = agg_map[ticker]
+        
+        if t_type == "BUY":
+            agg.has_buy = True
+            agg.qty += qty
+            agg.invested += val
+            agg.cashflows.append(CashFlow(date=dt, amount=-val))
+        elif t_type == "SELL":
+            if not agg.has_buy:
+                agg.invalid_cashflows = True
+            if agg.qty > 0:
+                avg_cost_before = agg.invested / agg.qty
+                agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
+            agg.qty = max(0.0, agg.qty - qty)
+            agg.cashflows.append(CashFlow(date=dt, amount=val))
+            
     holdings = []
     for ticker, agg in agg_map.items():
-        if agg.qty > 0.001:
+        if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
+            from backend.app.services.ticker_resolver import resolve_ticker
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
@@ -156,7 +170,7 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
                 avg_price=avg_price,
                 broker=BrokerType.ZERODHA,
                 asset_class=AssetClass.INDIAN_EQUITY,
-                cashflows=agg.cashflows,
+                cashflows=[] if agg.invalid_cashflows else agg.cashflows,
                 is_order_history=True
             ))
             
@@ -227,23 +241,24 @@ def _parse_groww_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVH
     name_col = actual_cols.get("stock name")
     
     if not symbol_col or not date_col or not value_col:
-        raise CSVParseError(f"Missing required columns in Groww Order History. Found: {list(df.columns)}")
-        
-    class AggHolding:
+        raise CSVParseError(f"Missing required columns in Groww Order History. Found: {list(df.columns)}")    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
             self.invested = 0.0
             self.cashflows = []
+            self.has_buy = False
+            self.invalid_cashflows = False
             
     agg_map = {}
+    transactions = []
     
     for _, row in df.iterrows():
         try:
-            status = str(row[status_col]).strip().lower() if status_col else "executed"
-            if "executed" not in status and "success" not in status:
+            status = str(row.get(actual_cols.get("order status", ""), "")).strip().lower()
+            if status and "executed" not in status and "success" not in status:
                 continue
-                
+
             ticker = str(row[symbol_col]).strip().upper()
             if not ticker:
                 continue
@@ -252,38 +267,45 @@ def _parse_groww_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVH
             val = clean_number(row[value_col])
             t_type = str(row[type_col]).strip().upper()
             
-            # 13-12-2021 09:15 AM
             date_str = str(row[date_col]).strip()
             try:
                 dt = datetime.strptime(date_str, "%d-%m-%Y %I:%M %p")
             except ValueError:
-                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") # fallback
-                
-            if ticker not in agg_map:
-                name = str(row[name_col]).strip() if name_col else ticker
-                agg_map[ticker] = AggHolding(name)
-                
-            agg = agg_map[ticker]
+                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             
-            if t_type == "BUY":
-                agg.qty += qty
-                agg.invested += val
-                agg.cashflows.append(CashFlow(date=dt, amount=-val))
-            elif t_type == "SELL":
-                # For average price approximation, if they sell, we reduce invested proportionately
-                if agg.qty > 0:
-                    avg_cost_before = agg.invested / agg.qty
-                    agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
-                agg.qty = max(0.0, agg.qty - qty)
-                agg.cashflows.append(CashFlow(date=dt, amount=val))
-                
+            name = str(row[name_col]).strip() if name_col else ticker
+            
+            transactions.append((dt, ticker, qty, val, t_type, name))
         except Exception:
             continue
             
+    transactions.sort(key=lambda x: x[0])
+    
+    for dt, ticker, qty, val, t_type, name in transactions:
+        if ticker not in agg_map:
+            agg_map[ticker] = AggHolding(name)
+            
+        agg = agg_map[ticker]
+        
+        if t_type == "BUY":
+            agg.has_buy = True
+            agg.qty += qty
+            agg.invested += val
+            agg.cashflows.append(CashFlow(date=dt, amount=-val))
+        elif t_type == "SELL":
+            if not agg.has_buy:
+                agg.invalid_cashflows = True
+            if agg.qty > 0:
+                avg_cost_before = agg.invested / agg.qty
+                agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
+            agg.qty = max(0.0, agg.qty - qty)
+            agg.cashflows.append(CashFlow(date=dt, amount=val))
+            
     holdings = []
     for ticker, agg in agg_map.items():
-        if agg.qty > 0.001:
+        if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
+            from backend.app.services.ticker_resolver import resolve_ticker
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
@@ -297,7 +319,7 @@ def _parse_groww_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVH
                 avg_price=avg_price,
                 broker=BrokerType.GROWW,
                 asset_class=AssetClass.INDIAN_EQUITY,
-                cashflows=agg.cashflows,
+                cashflows=[] if agg.invalid_cashflows else agg.cashflows,
                 is_order_history=True
             ))
             
@@ -398,19 +420,24 @@ def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[C
     name_col = actual_cols.get("stock name")
     
     if not symbol_col or not date_col or not price_col or not qty_col:
-        raise CSVParseError(f"Missing required columns in INDmoney Order History. Found: {list(df.columns)}")
-        
-    class AggHolding:
+        raise CSVParseError(f"Missing required columns in INDmoney Order History. Found: {list(df.columns)}")    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
             self.invested = 0.0
             self.cashflows = []
+            self.has_buy = False
+            self.invalid_cashflows = False
             
     agg_map = {}
+    transactions = []
     
     for _, row in df.iterrows():
         try:
+            status = str(row.get(actual_cols.get("order status", ""), "")).strip().lower()
+            if status and "executed" not in status and "success" not in status:
+                continue
+
             ticker = str(row[symbol_col]).strip().upper()
             if not ticker:
                 continue
@@ -420,37 +447,45 @@ def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[C
             val = qty * price
             t_type = str(row[type_col]).strip().upper()
             
-            # e.g., "10 Jan 2022, 07:30 AM"
             date_str = str(row[date_col]).strip()
             try:
                 dt = datetime.strptime(date_str, "%d %b %Y, %I:%M %p")
             except ValueError:
-                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") # fallback
-                
-            if ticker not in agg_map:
-                name = str(row[name_col]).strip() if name_col else ticker
-                agg_map[ticker] = AggHolding(name)
-                
-            agg = agg_map[ticker]
+                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
             
-            if t_type == "BUY":
-                agg.qty += qty
-                agg.invested += val
-                agg.cashflows.append(CashFlow(date=dt, amount=-val))
-            elif t_type == "SELL":
-                if agg.qty > 0:
-                    avg_cost_before = agg.invested / agg.qty
-                    agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
-                agg.qty = max(0.0, agg.qty - qty)
-                agg.cashflows.append(CashFlow(date=dt, amount=val))
-                
+            name = str(row[name_col]).strip() if name_col else ticker
+            
+            transactions.append((dt, ticker, qty, val, t_type, name))
         except Exception:
             continue
+            
+    transactions.sort(key=lambda x: x[0])
+    
+    for dt, ticker, qty, val, t_type, name in transactions:
+        if ticker not in agg_map:
+            agg_map[ticker] = AggHolding(name)
+            
+        agg = agg_map[ticker]
+        
+        if t_type == "BUY":
+            agg.has_buy = True
+            agg.qty += qty
+            agg.invested += val
+            agg.cashflows.append(CashFlow(date=dt, amount=-val))
+        elif t_type == "SELL":
+            if not agg.has_buy:
+                agg.invalid_cashflows = True
+            if agg.qty > 0:
+                avg_cost_before = agg.invested / agg.qty
+                agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
+            agg.qty = max(0.0, agg.qty - qty)
+            agg.cashflows.append(CashFlow(date=dt, amount=val))
             
     holdings = []
     for ticker, agg in agg_map.items():
         if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
+            from backend.app.services.ticker_resolver import resolve_ticker
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
@@ -464,7 +499,7 @@ def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[C
                 avg_price=avg_price,
                 broker=BrokerType.INDMONEY,
                 asset_class=AssetClass.US_EQUITY,
-                cashflows=agg.cashflows,
+                cashflows=[] if agg.invalid_cashflows else agg.cashflows,
                 is_order_history=True
             ))
             
