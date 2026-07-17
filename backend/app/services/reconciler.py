@@ -32,7 +32,15 @@ class Reconciler:
             new_map = {h.ticker: h for h in csv_holdings}
             for existing in self.current_map.values():
                 if existing.broker == broker and existing.ticker in new_map:
-                    existing.cashflows = new_map[existing.ticker].cashflows
+                    order_h = new_map[existing.ticker]
+                    existing.cashflows = order_h.cashflows
+                    
+                    # Compute the true native average price using the raw invested amount
+                    # from the order history, but keep the split-adjusted quantity from holdings.
+                    invested_native = order_h.quantity * order_h.avg_price
+                    if existing.quantity > 0:
+                        existing.avg_price = round(invested_native / existing.quantity, 4)
+                        
             return list(self.current_map.values())
 
         new_holdings: List[PortfolioHolding] = []
