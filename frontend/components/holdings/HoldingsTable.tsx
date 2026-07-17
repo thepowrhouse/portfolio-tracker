@@ -375,7 +375,7 @@ export function HoldingsTable({
                           ) : (
                             <TrendingDown className="h-3 w-3" />
                           )}
-                          {formatINR(holding.pnl_absolute || 0)}
+                          {formatCurrency(Math.abs(holding.pnl_absolute || 0), holding.asset_class)}
                         </div>
                         <div className={`tabular-nums text-xs font-medium ${
                           (holding.pnl_percent || 0) >= 0 ? "text-emerald-500/80" : "text-red-500/80"

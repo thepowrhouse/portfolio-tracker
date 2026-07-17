@@ -30,7 +30,11 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
       };
 
       portfolio.holdings.forEach((h) => {
-        const value = (h.current_price || h.avg_price) * h.quantity;
+        let value = (h.current_price || h.avg_price) * h.quantity;
+        if (h.asset_class === "us_equity") {
+          value *= (portfolio.usd_to_inr || 1);
+        }
+        
         if (h.broker === "zerodha") brokerMap.zerodha.value += value;
         else if (h.broker === "groww") brokerMap.groww.value += value;
         else if (h.broker === "indmoney") brokerMap.indmoney.value += value;
@@ -42,7 +46,11 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
       const indMap: Record<string, { name: string; value: number }> = {};
       
       portfolio.holdings.forEach((h) => {
-        const value = (h.current_price || h.avg_price) * h.quantity;
+        let value = (h.current_price || h.avg_price) * h.quantity;
+        if (h.asset_class === "us_equity") {
+          value *= (portfolio.usd_to_inr || 1);
+        }
+        
         const rec = recommendations?.find(r => r.ticker === h.ticker);
         const industry = rec?.fundamental?.industry || "Other";
         

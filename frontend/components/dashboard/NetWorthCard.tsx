@@ -16,7 +16,8 @@ export function NetWorthCard() {
   let investedWithXirr = 0;
   
   portfolio?.holdings.forEach((h) => {
-    const invested = h.avg_price * h.quantity;
+    const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
+    const invested = h.avg_price * h.quantity * multiplier;
     totalInvestment += invested;
     if (h.xirr != null) {
       weightedXirrSum += (h.xirr * invested);
@@ -87,9 +88,12 @@ export function NetWorthCard() {
               portfolio.holdings.reduce((acc, h) => {
                 const broker = h.broker || 'unknown';
                 if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0 };
-                const invested = h.avg_price * h.quantity;
+                
+                const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
+                const invested = h.avg_price * h.quantity * multiplier;
+                
                 acc[broker].invested += invested;
-                acc[broker].pnl += ((h.current_price || h.avg_price) - h.avg_price) * h.quantity;
+                acc[broker].pnl += ((h.current_price || h.avg_price) - h.avg_price) * h.quantity * multiplier;
                 if (h.xirr != null) {
                   acc[broker].weightedXirrSum += (h.xirr * invested);
                   acc[broker].investedWithXirr += invested;
