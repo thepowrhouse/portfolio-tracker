@@ -128,6 +128,13 @@ async def sync_portfolio(
     
     # Reconcile
     try:
+        # Before reconciling, ensure INDmoney US Equity snapshot values are converted to USD
+        # since the snapshot CSV has them in INR, but we want to store native USD internally
+        for h in csv_holdings:
+            if h.broker == BrokerType.INDMONEY and h.asset_class == "us_equity" and not getattr(h, 'is_order_history', False):
+                if _usd_to_inr > 0:
+                    h.avg_price = round(h.avg_price / _usd_to_inr, 4)
+
         new_holdings = reconcile_portfolio(_portfolio_db, csv_holdings, broker)
     except ValueError as e:
         raise HTTPException(400, detail=str(e))

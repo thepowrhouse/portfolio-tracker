@@ -92,16 +92,13 @@ export function HoldingsTable({
     return recommendations.find((r) => r.ticker === ticker);
   };
 
-  const formatCurrency = (value: number | null, assetClass: string) => {
-    if (value === null || value === undefined) return "—";
-    const symbol = assetClass === "indian_equity" ? "₹" : "$";
-    return `${symbol}${value.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const getINRValue = (value: number | null, assetClass: string) => {
+    if (value === null || value === undefined) return null;
+    return assetClass === "us_equity" ? value * (portfolio?.usd_to_inr || 83.5) : value;
   };
 
-  const formatINR = (value: number) => {
+  const formatINR = (value: number | null) => {
+    if (value === null || value === undefined) return "—";
     return `₹${value.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -134,23 +131,23 @@ export function HoldingsTable({
           aValue = getRecommendation(a.ticker)?.fundamental?.industry || "";
           bValue = getRecommendation(b.ticker)?.fundamental?.industry || "";
         } else if (sortConfig.key === "pnl_absolute") {
-          aValue = a.pnl_absolute || 0;
-          bValue = b.pnl_absolute || 0;
+          aValue = getINRValue(a.pnl_absolute, a.asset_class) || 0;
+          bValue = getINRValue(b.pnl_absolute, b.asset_class) || 0;
         } else if (sortConfig.key === "pnl_percent") {
           aValue = a.pnl_percent || 0;
           bValue = b.pnl_percent || 0;
         } else if (sortConfig.key === "invested") {
-          aValue = a.quantity * a.avg_price;
-          bValue = b.quantity * b.avg_price;
+          aValue = getINRValue(a.quantity * a.avg_price, a.asset_class) || 0;
+          bValue = getINRValue(b.quantity * b.avg_price, b.asset_class) || 0;
         } else if (sortConfig.key === "current_value") {
-          aValue = a.quantity * (a.current_price || 0);
-          bValue = b.quantity * (b.current_price || 0);
+          aValue = getINRValue(a.quantity * (a.current_price || 0), a.asset_class) || 0;
+          bValue = getINRValue(b.quantity * (b.current_price || 0), b.asset_class) || 0;
         } else if (sortConfig.key === "avg_price") {
-          aValue = a.avg_price;
-          bValue = b.avg_price;
+          aValue = getINRValue(a.avg_price, a.asset_class) || 0;
+          bValue = getINRValue(b.avg_price, b.asset_class) || 0;
         } else if (sortConfig.key === "current_price") {
-          aValue = a.current_price || 0;
-          bValue = b.current_price || 0;
+          aValue = getINRValue(a.current_price, a.asset_class) || 0;
+          bValue = getINRValue(b.current_price, b.asset_class) || 0;
         } else if (sortConfig.key === "xirr") {
           aValue = a.xirr !== null && a.xirr !== undefined ? a.xirr : -Infinity;
           bValue = b.xirr !== null && b.xirr !== undefined ? b.xirr : -Infinity;
@@ -336,7 +333,7 @@ export function HoldingsTable({
                     <td className="px-4 py-3 text-right tabular-nums">
                       <div className="flex flex-col items-end gap-1">
                         <div className="text-slate-300 font-medium">
-                          {formatCurrency(holding.avg_price, holding.asset_class)}
+                          {formatINR(getINRValue(holding.avg_price, holding.asset_class))}
                         </div>
                         <div className={`text-xs font-medium ${
                           (holding.current_price || 0) > holding.avg_price
@@ -345,14 +342,14 @@ export function HoldingsTable({
                             ? "text-red-400"
                             : "text-slate-400"
                         }`}>
-                          {formatCurrency(holding.current_price, holding.asset_class)}
+                          {formatINR(getINRValue(holding.current_price, holding.asset_class))}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       <div className="flex flex-col items-end gap-1">
                         <div className="text-slate-300 font-medium">
-                          {formatCurrency(holding.quantity * holding.avg_price, holding.asset_class)}
+                          {formatINR(getINRValue(holding.quantity * holding.avg_price, holding.asset_class))}
                         </div>
                         <div className={`text-xs font-medium ${
                           (holding.current_price || 0) > holding.avg_price
@@ -361,7 +358,7 @@ export function HoldingsTable({
                             ? "text-red-400"
                             : "text-slate-400"
                         }`}>
-                          {formatCurrency(holding.quantity * (holding.current_price || 0), holding.asset_class)}
+                          {formatINR(getINRValue(holding.quantity * (holding.current_price || 0), holding.asset_class))}
                         </div>
                       </div>
                     </td>
@@ -375,7 +372,7 @@ export function HoldingsTable({
                           ) : (
                             <TrendingDown className="h-3 w-3" />
                           )}
-                          {formatCurrency(Math.abs(holding.pnl_absolute || 0), holding.asset_class)}
+                          {formatINR(getINRValue(Math.abs(holding.pnl_absolute || 0), holding.asset_class))}
                         </div>
                         <div className={`tabular-nums text-xs font-medium ${
                           (holding.pnl_percent || 0) >= 0 ? "text-emerald-500/80" : "text-red-500/80"
