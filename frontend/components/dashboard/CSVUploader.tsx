@@ -2,7 +2,21 @@
 
 import { useState, useCallback } from "react";
 import { usePortfolio } from "@/store/PortfolioContext";
-import { Upload, FileSpreadsheet, AlertCircle, Check, Trash2 } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, Check, Trash2, Download } from "lucide-react";
+
+const sampleFiles = {
+  zerodha: [
+    { label: "Holdings", url: "/samples/zerodha_holdings.csv" },
+    { label: "Tradebook (XIRR)", url: "/samples/zerodha_tradebook.csv" }
+  ],
+  groww: [
+    { label: "Holdings", url: "/samples/groww_holdings.csv" },
+    { label: "Order History (XIRR)", url: "/samples/groww_order_history.csv" }
+  ],
+  indmoney: [
+    { label: "Portfolio", url: "/samples/indmoney_portfolio.csv" }
+  ]
+};
 
 export function CSVUploader() {
   const { syncCSV, isLoading, resetPortfolio } = usePortfolio();
@@ -116,6 +130,23 @@ export function CSVUploader() {
         <p className="mt-1 text-xs text-slate-500">
           or click to browse
         </p>
+      </div>
+
+      <div className="mt-4 flex flex-col items-center justify-center space-y-2 text-xs text-slate-500">
+        <span>Need a sample file?</span>
+        <div className="flex gap-4">
+          {sampleFiles[selectedBroker as keyof typeof sampleFiles]?.map((file, idx) => (
+            <a 
+              key={idx} 
+              href={file.url} 
+              download
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <Download className="h-3 w-3" />
+              {file.label}
+            </a>
+          ))}
+        </div>
       </div>
 
       {uploadStatus !== "idle" && (
