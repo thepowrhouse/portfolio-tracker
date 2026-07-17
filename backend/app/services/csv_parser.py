@@ -91,7 +91,9 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
     date_col = actual_cols.get("order_execution_time") or actual_cols.get("trade_date")
     
     if not symbol_col or not date_col or not price_col or not qty_col:
-        raise CSVParseError(f"Missing required columns in Zerodha Tradebook. Found: {list(df.columns)}")    class AggHolding:
+        raise CSVParseError(f"Missing required columns in Zerodha Tradebook. Found: {list(df.columns)}")
+
+    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
@@ -156,7 +158,7 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
     for ticker, agg in agg_map.items():
         if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
-            from backend.app.services.ticker_resolver import resolve_ticker
+            # Use resolve_ticker imported at the top
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
@@ -241,7 +243,9 @@ def _parse_groww_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVH
     name_col = actual_cols.get("stock name")
     
     if not symbol_col or not date_col or not value_col:
-        raise CSVParseError(f"Missing required columns in Groww Order History. Found: {list(df.columns)}")    class AggHolding:
+        raise CSVParseError(f"Missing required columns in Groww Order History. Found: {list(df.columns)}")
+
+    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
@@ -305,7 +309,7 @@ def _parse_groww_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVH
     for ticker, agg in agg_map.items():
         if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
-            from backend.app.services.ticker_resolver import resolve_ticker
+            # Use resolve_ticker imported at the top
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
@@ -420,7 +424,9 @@ def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[C
     name_col = actual_cols.get("stock name")
     
     if not symbol_col or not date_col or not price_col or not qty_col:
-        raise CSVParseError(f"Missing required columns in INDmoney Order History. Found: {list(df.columns)}")    class AggHolding:
+        raise CSVParseError(f"Missing required columns in INDmoney Order History. Found: {list(df.columns)}")
+
+    class AggHolding:
         def __init__(self, name):
             self.name = name
             self.qty = 0.0
@@ -485,7 +491,7 @@ def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[C
     for ticker, agg in agg_map.items():
         if agg.qty > 0.0001:
             final_ticker = get_ticker_from_isin(ticker)
-            from backend.app.services.ticker_resolver import resolve_ticker
+            # Use resolve_ticker imported at the top
             company_name, _ = resolve_ticker(final_ticker)
             if agg.name and final_ticker == ticker:
                 company_name = agg.name
