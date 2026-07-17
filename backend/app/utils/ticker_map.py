@@ -30,6 +30,7 @@ TICKER_MAP = {
     "TITAN": ("Titan Company Ltd", "indian_equity"),
     "POWERGRID": ("Power Grid Corporation of India Ltd", "indian_equity"),
     "NTPC": ("NTPC Ltd", "indian_equity"),
+    "SILVERBEES": ("Nippon India Silver ETF", "indian_equity"),
     
     # US Equities
     "AAPL": ("Apple Inc.", "us_equity"),
