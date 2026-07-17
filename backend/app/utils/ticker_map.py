@@ -31,6 +31,9 @@ TICKER_MAP = {
     "POWERGRID": ("Power Grid Corporation of India Ltd", "indian_equity"),
     "NTPC": ("NTPC Ltd", "indian_equity"),
     "SILVERBEES": ("Nippon India Silver ETF", "indian_equity"),
+    "BONDADA": ("Bondada Engineering Ltd", "indian_equity"),
+    "HDFCNIFTY": ("HDFC Nifty 50 ETF", "indian_equity"),
+    "KPGEL.BO": ("KP Green Engineering Ltd", "indian_equity"),
     
     # US Equities
     "AAPL": ("Apple Inc.", "us_equity"),
