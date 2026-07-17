@@ -1,0 +1,5 @@
+﻿Stock Name,Stock Symbol,Order Placed Time,Order Execution Time,Broker Reference Id,Transaction Type,Order Type,Quantity,Price ($),Order Amount ($),Brokerage ($)
+Apple Inc. Common Stock,AAPL,"09 Dec 2021, 09:48 PM","10 Jan 2022, 07:30 AM",IL.cbc52b17-ea64-4c0a-bb42-411a0409cf5c,BUY,market,1,175.07,175.07,0
+"Tesla, Inc. Common Stock",TSLA,"09 Dec 2021, 09:51 PM","10 Jan 2022, 07:30 AM",IL.f49dfbbc-094d-4df4-be3f-62c2efd26b86,BUY,market,0.14792991,1031.84,152.64,0
+"Tesla, Inc. Common Stock",TSLA,"29 Dec 2021, 08:21 PM","10 Jan 2022, 07:30 AM",IL.ec849ba3-4c6f-4fff-a685-e1d0dc9d0739,SELL,market,0.1478549,1086.2,160.6,0
+Apple Inc. Common Stock,AAPL,"29 Dec 2021, 08:28 PM","10 Jan 2022, 07:30 AM",IL.2e6211cb-561e-4342-b32c-e39f8714a154,SELL,market,1,180.21,180.21,0

@@ -315,6 +315,11 @@ def parse_indmoney_csv(file_bytes: bytes) -> List[CSVHolding]:
     
     actual_cols = {c.lower().strip(): c for c in df.columns}
     
+    # Check if it's an order history file
+    is_order_history = "transaction type" in actual_cols and "order execution time" in actual_cols
+    if is_order_history:
+        return _parse_indmoney_order_history(df, actual_cols)
+    
     ticker_col = actual_cols.get("ticker") or actual_cols.get("symbol") or actual_cols.get("stock") or actual_cols.get("source_holding_id")
     qty_col = actual_cols.get("units") or actual_cols.get("quantity") or actual_cols.get("shares") or actual_cols.get("total units")
     avg_col = actual_cols.get("average cost") or actual_cols.get("avg cost") or actual_cols.get("buy price")
@@ -382,6 +387,87 @@ def parse_indmoney_csv(file_bytes: bytes) -> List[CSVHolding]:
         with open("indmoney_debug.log", "a") as f:
             f.write(f"Parsed 0 holdings. Columns were: {list(df.columns)}\n")
     
+    return holdings
+
+def _parse_indmoney_order_history(df: pd.DataFrame, actual_cols: dict) -> List[CSVHolding]:
+    symbol_col = actual_cols.get("stock symbol") or actual_cols.get("symbol")
+    qty_col = actual_cols.get("quantity")
+    price_col = actual_cols.get("price ($)") or actual_cols.get("price")
+    type_col = actual_cols.get("transaction type")
+    date_col = actual_cols.get("order execution time")
+    name_col = actual_cols.get("stock name")
+    
+    if not symbol_col or not date_col or not price_col or not qty_col:
+        raise CSVParseError(f"Missing required columns in INDmoney Order History. Found: {list(df.columns)}")
+        
+    class AggHolding:
+        def __init__(self, name):
+            self.name = name
+            self.qty = 0.0
+            self.invested = 0.0
+            self.cashflows = []
+            
+    agg_map = {}
+    
+    for _, row in df.iterrows():
+        try:
+            ticker = str(row[symbol_col]).strip().upper()
+            if not ticker:
+                continue
+                
+            qty = clean_number(row[qty_col])
+            price = clean_number(row[price_col])
+            val = qty * price
+            t_type = str(row[type_col]).strip().upper()
+            
+            # e.g., "10 Jan 2022, 07:30 AM"
+            date_str = str(row[date_col]).strip()
+            try:
+                dt = datetime.strptime(date_str, "%d %b %Y, %I:%M %p")
+            except ValueError:
+                dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") # fallback
+                
+            if ticker not in agg_map:
+                name = str(row[name_col]).strip() if name_col else ticker
+                agg_map[ticker] = AggHolding(name)
+                
+            agg = agg_map[ticker]
+            
+            if t_type == "BUY":
+                agg.qty += qty
+                agg.invested += val
+                agg.cashflows.append(CashFlow(date=dt, amount=-val))
+            elif t_type == "SELL":
+                if agg.qty > 0:
+                    avg_cost_before = agg.invested / agg.qty
+                    agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
+                agg.qty = max(0.0, agg.qty - qty)
+                agg.cashflows.append(CashFlow(date=dt, amount=val))
+                
+        except Exception:
+            continue
+            
+    holdings = []
+    for ticker, agg in agg_map.items():
+        if agg.qty > 0.0001:
+            final_ticker = get_ticker_from_isin(ticker)
+            company_name, _ = resolve_ticker(final_ticker)
+            if agg.name and final_ticker == ticker:
+                company_name = agg.name
+                
+            avg_price = agg.invested / agg.qty if agg.qty > 0 else 0.0
+            
+            holdings.append(CSVHolding(
+                ticker=final_ticker,
+                company_name=company_name,
+                quantity=agg.qty,
+                avg_price=avg_price,
+                broker=BrokerType.INDMONEY,
+                asset_class=AssetClass.US_EQUITY,
+                cashflows=agg.cashflows,
+                is_order_history=True
+            ))
+            
     return holdings
 
 def parse_csv_by_broker(file_bytes: bytes, broker: BrokerType) -> List[CSVHolding]:

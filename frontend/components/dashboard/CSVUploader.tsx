@@ -14,7 +14,8 @@ const sampleFiles = {
     { label: "Order History (XIRR)", url: "/samples/groww_order_history.csv" }
   ],
   indmoney: [
-    { label: "Portfolio", url: "/samples/indmoney_portfolio.csv" }
+    { label: "Portfolio", url: "/samples/indmoney_portfolio.csv" },
+    { label: "Order History (XIRR)", url: "/samples/indmoney_order_history.csv" }
   ]
 };
 
