@@ -44,6 +44,11 @@ def parse_zerodha_csv(file_bytes: bytes) -> List[CSVHolding]:
     # Find actual columns (case-insensitive)
     actual_cols = {c.lower().strip(): c for c in df.columns}
     
+    # Check if it's a tradebook
+    is_tradebook = "trade_type" in actual_cols and ("trade_date" in actual_cols or "order_execution_time" in actual_cols)
+    if is_tradebook:
+        return _parse_zerodha_tradebook(df, actual_cols)
+    
     symbol_col = actual_cols.get("symbol") or actual_cols.get("tradingsymbol") or actual_cols.get("instrument")
     qty_col = actual_cols.get("quantity") or actual_cols.get("qty") or actual_cols.get("qty.")
     avg_col = actual_cols.get("avg. cost") or actual_cols.get("avg cost") or actual_cols.get("average cost")
@@ -76,6 +81,85 @@ def parse_zerodha_csv(file_bytes: bytes) -> List[CSVHolding]:
         except (ValueError, TypeError):
             continue
     
+    return holdings
+
+def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHolding]:
+    symbol_col = actual_cols.get("symbol") or actual_cols.get("isin")
+    qty_col = actual_cols.get("quantity")
+    price_col = actual_cols.get("price")
+    type_col = actual_cols.get("trade_type")
+    date_col = actual_cols.get("order_execution_time") or actual_cols.get("trade_date")
+    
+    if not symbol_col or not date_col or not price_col or not qty_col:
+        raise CSVParseError(f"Missing required columns in Zerodha Tradebook. Found: {list(df.columns)}")
+        
+    class AggHolding:
+        def __init__(self, name):
+            self.name = name
+            self.qty = 0.0
+            self.invested = 0.0
+            self.cashflows = []
+            
+    agg_map = {}
+    
+    for _, row in df.iterrows():
+        try:
+            ticker = str(row[symbol_col]).strip().upper()
+            if not ticker:
+                continue
+                
+            qty = clean_number(row[qty_col])
+            price = clean_number(row[price_col])
+            val = qty * price
+            t_type = str(row[type_col]).strip().upper()
+            
+            # e.g., 2025-11-19T13:21:39 or 2025-11-19
+            date_str = str(row[date_col]).strip()
+            try:
+                dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                dt = datetime.strptime(date_str, "%Y-%m-%d") # fallback
+                
+            if ticker not in agg_map:
+                agg_map[ticker] = AggHolding(ticker)
+                
+            agg = agg_map[ticker]
+            
+            if t_type == "BUY":
+                agg.qty += qty
+                agg.invested += val
+                agg.cashflows.append(CashFlow(date=dt, amount=-val))
+            elif t_type == "SELL":
+                if agg.qty > 0:
+                    avg_cost_before = agg.invested / agg.qty
+                    agg.invested = max(0.0, agg.invested - (qty * avg_cost_before))
+                agg.qty = max(0.0, agg.qty - qty)
+                agg.cashflows.append(CashFlow(date=dt, amount=val))
+                
+        except Exception:
+            continue
+            
+    holdings = []
+    for ticker, agg in agg_map.items():
+        if agg.qty > 0.001:
+            final_ticker = get_ticker_from_isin(ticker)
+            company_name, _ = resolve_ticker(final_ticker)
+            if agg.name and final_ticker == ticker:
+                company_name = agg.name
+                
+            avg_price = agg.invested / agg.qty if agg.qty > 0 else 0.0
+            
+            holdings.append(CSVHolding(
+                ticker=final_ticker,
+                company_name=company_name,
+                quantity=agg.qty,
+                avg_price=avg_price,
+                broker=BrokerType.ZERODHA,
+                asset_class=AssetClass.INDIAN_EQUITY,
+                cashflows=agg.cashflows,
+                is_order_history=True
+            ))
+            
     return holdings
 
 def parse_groww_csv(file_bytes: bytes) -> List[CSVHolding]:
