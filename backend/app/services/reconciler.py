@@ -25,9 +25,9 @@ class Reconciler:
         """
         # Handle order history flag: only update cashflows without deleting
         if csv_holdings and getattr(csv_holdings[0], 'is_order_history', False):
-            groww_existing = [h for h in self.current_map.values() if h.broker == broker]
-            if not groww_existing:
-                raise ValueError("Please upload your Groww Holdings Snapshot CSV first before uploading the Order History CSV for XIRR computation.")
+            broker_existing = [h for h in self.current_map.values() if h.broker == broker]
+            if not broker_existing:
+                raise ValueError(f"Please upload your {broker.value.title()} Holdings Snapshot CSV first before uploading the Order History/Tradebook CSV for XIRR computation.")
                 
             new_map = {h.ticker: h for h in csv_holdings}
             for existing in self.current_map.values():
