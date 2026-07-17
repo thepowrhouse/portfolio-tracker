@@ -35,11 +35,9 @@ class Reconciler:
                     order_h = new_map[existing.ticker]
                     existing.cashflows = order_h.cashflows
                     
-                    # Compute the true native average price using the raw invested amount
-                    # from the order history, but keep the split-adjusted quantity from holdings.
-                    invested_native = order_h.quantity * order_h.avg_price
-                    if existing.quantity > 0:
-                        existing.avg_price = round(invested_native / existing.quantity, 4)
+                    # Only copy cashflows to compute XIRR. 
+                    # Do NOT overwrite avg_price from order history because order history
+                    # does not account for splits/bonuses/transfers. The snapshot CSV is always more accurate.
                         
             return list(self.current_map.values())
 
