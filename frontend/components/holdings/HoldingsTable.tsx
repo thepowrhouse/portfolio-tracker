@@ -94,7 +94,7 @@ export function HoldingsTable({
 
   const getINRValue = (value: number | null, assetClass: string) => {
     if (value === null || value === undefined) return null;
-    return assetClass === "us_equity" ? value * (portfolio?.usd_to_inr || 83.5) : value;
+    return assetClass === "us_equity" || assetClass === "US_EQUITY" ? value * (portfolio?.usd_to_inr || 83.5) : value;
   };
 
   const formatINR = (value: number | null) => {

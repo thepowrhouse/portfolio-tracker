@@ -91,7 +91,7 @@ async def get_portfolio_state():
     net_worth = 0
     for h in enriched:
         val = (h.current_price or h.avg_price) * h.quantity
-        if h.asset_class == "us_equity":
+        if h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
             val *= _usd_to_inr
         net_worth += val
     
@@ -131,7 +131,7 @@ async def sync_portfolio(
         # Before reconciling, ensure INDmoney US Equity snapshot values are converted to USD
         # since the snapshot CSV has them in INR, but we want to store native USD internally
         for h in csv_holdings:
-            if h.broker == BrokerType.INDMONEY and h.asset_class == "us_equity" and not getattr(h, 'is_order_history', False):
+            if h.broker == BrokerType.INDMONEY and h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY") and not getattr(h, 'is_order_history', False):
                 if _usd_to_inr > 0:
                     h.avg_price = round(h.avg_price / _usd_to_inr, 4)
 
