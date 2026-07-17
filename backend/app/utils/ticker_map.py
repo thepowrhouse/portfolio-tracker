@@ -78,12 +78,21 @@ try:
 except Exception:
     pass
 
+
+def clean_ticker(ticker: str) -> str:
+    """Removes common exchange suffixes from raw tickers."""
+    ticker = ticker.strip().upper()
+    for suffix in ['-BE', '-BZ', '-EQ', '.NS', '.BO']:
+        if ticker.endswith(suffix):
+            ticker = ticker[:-len(suffix)]
+    return ticker
+
 def get_ticker_from_isin(isin: str) -> str:
     """Returns the NSE symbol if the string is an ISIN, else returns the string as-is."""
     cleaned = isin.strip().upper()
     if cleaned.startswith("IN") and len(cleaned) == 12:
-        return ISIN_MAP.get(cleaned, cleaned)
-    return cleaned
+        return clean_ticker(ISIN_MAP.get(cleaned, cleaned))
+    return clean_ticker(cleaned)
 
 def resolve_ticker(raw_ticker: str) -> tuple[str, str]:
     """
