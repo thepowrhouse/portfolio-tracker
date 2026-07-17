@@ -83,23 +83,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Sync response:", response);
 
-      // CRITICAL: Build a complete PortfolioState from the response
-      const rate = portfolio?.usd_to_inr || 83.5;
-      const netWorth = response.holdings.reduce(
-        (sum, h) => sum + (h.current_price || h.avg_price) * h.quantity, 0
-      );
-
-      const updatedState: PortfolioState = {
-        holdings: response.holdings,
-        net_worth_inr: round(netWorth, 2),
-        net_worth_usd: round(netWorth / rate, 2),
-        last_sync: new Date().toISOString(),
-        usd_to_inr: rate,
-      };
-
-      setPortfolioState(updatedState);
-      setLastUpdated(Date.now()); // TRIGGERS ALL SUBSCRIBERS
-
+      // CRITICAL: Fetch the fresh state from the backend to get correct net worth calculations
+      // including currency conversions
+      await refreshPortfolio();
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "CSV sync failed");
       console.error("Sync error:", err);
