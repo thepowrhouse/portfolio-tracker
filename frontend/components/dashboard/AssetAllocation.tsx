@@ -111,7 +111,10 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
     let totalProfit = 0;
     let totalLoss = 0;
     portfolio.holdings.forEach(h => {
-      const pnl = h.pnl_absolute || 0;
+      let pnl = h.pnl_absolute || 0;
+      if (h.asset_class === "us_equity") {
+        pnl *= (portfolio.usd_to_inr || 1);
+      }
       if (pnl > 0) totalProfit += pnl;
       else if (pnl < 0) totalLoss += pnl;
     });
