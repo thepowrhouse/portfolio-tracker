@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from typing import List
-from app.models import PortfolioState, PortfolioHolding, CSVHolding, BrokerType
+from app.models import PortfolioState, PortfolioHolding, CSVHolding, BrokerType, AssetClass
 from app.services.csv_parser import parse_csv_by_broker, CSVParseError
 from app.services.reconciler import reconcile_portfolio
 from app.services.technical import get_technical_analysis
