@@ -22,7 +22,9 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
     """
     yf_ticker = ticker
     if asset_class == "indian_equity" or asset_class == "AssetClass.INDIAN_EQUITY":
-        yf_ticker = f"{ticker}.NS"
+        yf_ticker = ticker
+        if not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
 
     try:
         stock = yf.Ticker(yf_ticker)

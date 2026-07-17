@@ -10,7 +10,9 @@ from app.models import FundamentalMetrics
 def get_fundamental_analysis(ticker: str, asset_class: str) -> FundamentalMetrics:
     yf_ticker = ticker
     if asset_class == "indian_equity":
-        yf_ticker = f"{ticker}.NS"
+        yf_ticker = ticker
+        if not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
     
     try:
         stock = yf.Ticker(yf_ticker)

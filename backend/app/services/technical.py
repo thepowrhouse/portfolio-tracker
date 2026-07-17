@@ -121,7 +121,9 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
     # Adjust ticker for yfinance
     yf_ticker = ticker
     if asset_class == "indian_equity":
-        yf_ticker = f"{ticker}.NS"
+        yf_ticker = ticker
+        if not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
     
     import time
     for attempt in range(3):

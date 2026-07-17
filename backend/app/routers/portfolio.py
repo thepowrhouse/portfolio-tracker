@@ -38,7 +38,9 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     def enrich_single(h: PortfolioHolding):
         try:
             import yfinance as yf
-            yf_ticker = f"{h.ticker}.NS" if h.asset_class == "indian_equity" else h.ticker
+            yf_ticker = h.ticker
+            if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+                yf_ticker += ".NS"
             stock = yf.Ticker(yf_ticker)
             info = stock.info
             price = info.get("currentPrice") or info.get("regularMarketPrice") or h.avg_price
