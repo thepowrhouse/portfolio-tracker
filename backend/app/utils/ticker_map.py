@@ -31,9 +31,9 @@ TICKER_MAP = {
     "POWERGRID": ("Power Grid Corporation of India Ltd", "indian_equity"),
     "NTPC": ("NTPC Ltd", "indian_equity"),
     "SILVERBEES": ("Nippon India Silver ETF", "indian_equity"),
-    "BONDADA.BO": ("Bondada Engineering Ltd", "indian_equity"),
+    "BONDADA": ("Bondada Engineering Ltd", "indian_equity"),
     "HDFCNIFTY": ("HDFC Nifty 50 ETF", "indian_equity"),
-    "KPGEL.BO": ("KP Green Engineering Ltd", "indian_equity"),
+    "KPGEL": ("KP Green Engineering Ltd", "indian_equity"),
     
     # US Equities
     "AAPL": ("Apple Inc.", "us_equity"),
@@ -85,17 +85,24 @@ except Exception:
 def clean_ticker(ticker: str) -> str:
     """Removes common exchange suffixes from raw tickers."""
     ticker = ticker.strip().upper()
-    for suffix in ['-BE', '-BZ', '-EQ', '.NS', '.BO']:
+    for suffix in ['-BE', '-BZ', '-EQ']:
         if ticker.endswith(suffix):
             ticker = ticker[:-len(suffix)]
     return ticker
+
+TICKER_OVERRIDES = {
+    "BONDADA": "BONDADA.BO",
+    "KPGEL": "KPGEL.BO"
+}
 
 def get_ticker_from_isin(isin: str) -> str:
     """Returns the NSE symbol if the string is an ISIN, else returns the string as-is."""
     cleaned = isin.strip().upper()
     if cleaned.startswith("IN") and len(cleaned) == 12:
-        return clean_ticker(ISIN_MAP.get(cleaned, cleaned))
-    return clean_ticker(cleaned)
+        res = clean_ticker(ISIN_MAP.get(cleaned, cleaned))
+    else:
+        res = clean_ticker(cleaned)
+    return TICKER_OVERRIDES.get(res, res)
 
 def resolve_ticker(raw_ticker: str) -> tuple[str, str]:
     """
