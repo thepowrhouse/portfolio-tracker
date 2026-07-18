@@ -41,4 +41,5 @@ def calculate_xirr(cashflows: List[Tuple[datetime, float]], guess: float = 0.1, 
         else:
             r = r_new
             
-    return r
+    # If we didn't converge within max_iter, return None
+    return None
