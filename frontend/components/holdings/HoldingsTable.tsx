@@ -388,6 +388,15 @@ export function HoldingsTable({
                         }`}>
                           {holding.xirr >= 0 ? "+" : ""}{holding.xirr.toFixed(2)}%
                         </div>
+                      ) : holding.pnl_percent != null ? (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <div className={`tabular-nums text-sm font-medium ${
+                            holding.pnl_percent >= 0 ? "text-emerald-400" : "text-red-400"
+                          }`}>
+                            {holding.pnl_percent >= 0 ? "+" : ""}{holding.pnl_percent.toFixed(2)}%
+                          </div>
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider">P&L Fallback</span>
+                        </div>
                       ) : (
                         <span className="text-slate-600 text-sm">—</span>
                       )}
