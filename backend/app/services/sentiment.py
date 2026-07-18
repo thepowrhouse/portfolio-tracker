@@ -4,18 +4,17 @@ Uses yfinance to fetch recent news and vaderSentiment to grade the sentiment.
 """
 
 import yfinance as yf
-from transformers import pipeline
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from app.models import SentimentAnalysis, SentimentGrade
 
-# Load the FinBERT model globally so it's initialized once on startup
-# This prevents downloading and loading weights for every API request
-try:
-    print("Loading FinBERT sentiment model...")
-    finbert = pipeline("sentiment-analysis", model="ProsusAI/finbert")
-    print("FinBERT model loaded successfully.")
-except Exception as e:
-    print(f"Failed to load FinBERT model: {e}")
-    finbert = None
+def get_vader_grade(compound_score: float) -> str:
+    """Map VADER compound score to a sentiment grade string."""
+    if compound_score >= 0.05:
+        return "Bullish"
+    elif compound_score <= -0.05:
+        return "Bearish"
+    else:
+        return "Neutral"
 
 def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> SentimentAnalysis:
     """
@@ -34,10 +33,12 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
         print(f"Failed to fetch news for {ticker}: {e}")
         news_items = []
 
+    analyzer = SentimentIntensityAnalyzer()
+    
     headlines = []
     grades = []
     
-    if news_items and finbert:
+    if news_items:
         for item in news_items:
             title = ""
             if isinstance(item, dict):
@@ -47,22 +48,11 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
                     title = item.get("title", "")
                     
             if title:
-                # Pass the headline through FinBERT
-                try:
-                    result = finbert(title)[0]
-                    label = result['label']
-                    
-                    if label == "positive":
-                        grade = "Bullish"
-                    elif label == "negative":
-                        grade = "Bearish"
-                    else:
-                        grade = "Neutral"
-                        
-                    headlines.append(title)
-                    grades.append(grade)
-                except Exception as e:
-                    print(f"FinBERT analysis failed for headline: {e}")
+                score = analyzer.polarity_scores(title)
+                grade = get_vader_grade(score['compound'])
+                
+                headlines.append(title)
+                grades.append(grade)
             
     if not headlines:
         return SentimentAnalysis(
