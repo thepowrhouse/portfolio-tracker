@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
+from typing import List, Dict
+from collections import defaultdict
 from app.models import PortfolioState, PortfolioHolding, CSVHolding, BrokerType, AssetClass
 from app.services.csv_parser import parse_csv_by_broker, CSVParseError
 from app.services.reconciler import reconcile_portfolio
@@ -13,7 +14,7 @@ from datetime import datetime
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 # In-memory store for demo (use PostgreSQL in production)
-_portfolio_db: List[PortfolioHolding] = []
+_portfolio_db: Dict[str, List[PortfolioHolding]] = defaultdict(list)
 _usd_to_inr: float = 83.5
 
 async def get_forex_rate() -> float:
@@ -30,6 +31,9 @@ async def get_forex_rate() -> float:
     except Exception:
         pass
     return _usd_to_inr
+
+def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
+    return x_user_email
 
 def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     """Fetch current prices and compute P&L in parallel."""
@@ -85,10 +89,11 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     return holdings
 
 @router.get("/state", response_model=PortfolioState)
-async def get_portfolio_state():
+async def get_portfolio_state(email: str = Depends(get_user_email)):
     global _portfolio_db
+    user_portfolio = _portfolio_db[email]
     rate = await get_forex_rate()
-    enriched = enrich_holdings(_portfolio_db)
+    enriched = enrich_holdings(user_portfolio)
     
     net_worth = 0
     for h in enriched:
@@ -108,7 +113,8 @@ async def get_portfolio_state():
 @router.post("/sync")
 async def sync_portfolio(
     broker: BrokerType,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    email: str = Depends(get_user_email)
 ):
     """
     CRITICAL ENDPOINT: CSV Upload + Reconciliation.
@@ -117,6 +123,7 @@ async def sync_portfolio(
     3. Return new state
     """
     global _portfolio_db
+    user_portfolio = _portfolio_db[email]
     
     if broker == BrokerType.RSU:
         raise HTTPException(400, "RSU entries use manual POST, not CSV upload")
@@ -137,34 +144,35 @@ async def sync_portfolio(
                 if _usd_to_inr > 0:
                     h.avg_price = round(h.avg_price / _usd_to_inr, 4)
 
-        new_holdings = reconcile_portfolio(_portfolio_db, csv_holdings, broker)
+        new_holdings = reconcile_portfolio(user_portfolio, csv_holdings, broker)
     except ValueError as e:
         raise HTTPException(400, detail=str(e))
         
-    _portfolio_db.clear()
-    _portfolio_db.extend(new_holdings)
+    user_portfolio.clear()
+    user_portfolio.extend(new_holdings)
     
     # Enrich with prices
-    enriched = enrich_holdings(_portfolio_db)
+    enriched = enrich_holdings(user_portfolio)
     
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
         "added": len([h for h in csv_holdings if not any(
             existing.ticker == h.ticker and existing.broker == h.broker 
-            for existing in _portfolio_db
+            for existing in user_portfolio
         )]),
         "updated": len([h for h in csv_holdings if any(
             existing.ticker == h.ticker and existing.broker == h.broker 
-            for existing in _portfolio_db
+            for existing in user_portfolio
         )]),
-        "deleted": len(_portfolio_db) - len(csv_holdings) if len(_portfolio_db) > len(csv_holdings) else 0,
+        "deleted": len(user_portfolio) - len(csv_holdings) if len(user_portfolio) > len(csv_holdings) else 0,
         "holdings": enriched
     }
 
 @router.post("/manual")
-async def add_manual_holding(holding: CSVHolding):
+async def add_manual_holding(holding: CSVHolding, email: str = Depends(get_user_email)):
     """For RSU or manual entries."""
     global _portfolio_db
+    user_portfolio = _portfolio_db[email]
     from uuid import uuid4
     new_h = PortfolioHolding(
         id=str(uuid4()),
@@ -175,17 +183,18 @@ async def add_manual_holding(holding: CSVHolding):
         broker=holding.broker,
         asset_class=holding.asset_class
     )
-    _portfolio_db.append(new_h)
+    user_portfolio.append(new_h)
     return new_h
 
 @router.delete("/{holding_id}")
-async def delete_holding(holding_id: str):
+async def delete_holding(holding_id: str, email: str = Depends(get_user_email)):
     global _portfolio_db
-    _portfolio_db[:] = [h for h in _portfolio_db if h.id != holding_id]
+    user_portfolio = _portfolio_db[email]
+    _portfolio_db[email] = [h for h in user_portfolio if h.id != holding_id]
     return {"message": "Deleted"}
 
 @router.post("/reset")
-async def reset_portfolio():
+async def reset_portfolio(email: str = Depends(get_user_email)):
     global _portfolio_db
-    _portfolio_db.clear()
+    _portfolio_db[email].clear()
     return {"message": "Portfolio reset successfully"}

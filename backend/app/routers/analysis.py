@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -8,7 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
-from app.routers.portfolio import _portfolio_db
+from app.routers.portfolio import _portfolio_db, get_user_email
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -26,33 +26,35 @@ def analyze_single_holding(holding):
     )
 
 @router.get("/batch", response_model=List[StockRecommendation])
-async def get_batch_analysis():
+async def get_batch_analysis(email: str = Depends(get_user_email)):
     """
     Fetch analysis for ALL holdings in portfolio.
     Called after CSV sync to refresh all recommendations.
     """
-    if not _portfolio_db:
+    user_portfolio = _portfolio_db[email]
+    if not user_portfolio:
         return []
         
     loop = asyncio.get_event_loop()
     with ThreadPoolExecutor(max_workers=10) as executor:
         tasks = [
             loop.run_in_executor(executor, analyze_single_holding, holding)
-            for holding in _portfolio_db
+            for holding in user_portfolio
         ]
         results = await asyncio.gather(*tasks)
     
     return results
 
 @router.get("/{ticker}", response_model=StockRecommendation)
-async def get_stock_analysis(ticker: str):
+async def get_stock_analysis(ticker: str, email: str = Depends(get_user_email)):
     """
     Fetch complete analysis for a single stock.
     Called by frontend when expanding a stock row.
     """
+    user_portfolio = _portfolio_db[email]
     # Find holding to get asset class
     holding = next(
-        (h for h in _portfolio_db if h.ticker.upper() == ticker.upper()),
+        (h for h in user_portfolio if h.ticker.upper() == ticker.upper()),
         None
     )
     
