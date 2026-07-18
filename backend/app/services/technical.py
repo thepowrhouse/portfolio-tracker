@@ -136,6 +136,10 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
                     time.sleep(1)
                     continue
                 return TechnicalIndicators(ticker=ticker)
+                
+            hist = hist.dropna(subset=["Close", "High", "Low", "Volume"])
+            if hist.empty or len(hist) < 50:
+                return TechnicalIndicators(ticker=ticker)
             
             close = hist["Close"]
             high = hist["High"]
