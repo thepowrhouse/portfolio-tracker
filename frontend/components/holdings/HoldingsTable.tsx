@@ -206,7 +206,7 @@ export function HoldingsTable({
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
       <div className="border-b border-slate-800 px-4 py-3 flex justify-between items-center flex-wrap gap-4">
         <div className="flex gap-2">
-          {["All", "Zerodha", "Groww", "INDmoney"].map((tab) => (
+          {["All", "Zerodha", "Groww", "INDmoney", "AngelOne"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

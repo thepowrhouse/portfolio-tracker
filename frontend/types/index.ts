@@ -1,4 +1,4 @@
-export type BrokerType = "zerodha" | "groww" | "indmoney" | "rsu";
+export type BrokerType = "zerodha" | "groww" | "indmoney" | "angelone" | "rsu";
 export type AssetClass = "indian_equity" | "us_equity" | "rsu";
 export type Recommendation = "BUY" | "HOLD" | "SELL";
 export type SentimentGrade = "Bullish" | "Neutral" | "Bearish";

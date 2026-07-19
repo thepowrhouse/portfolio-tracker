@@ -16,6 +16,10 @@ const sampleFiles = {
   indmoney: [
     { label: "Portfolio", url: "/samples/indmoney_portfolio.csv" },
     { label: "Order History (XIRR)", url: "/samples/indmoney_order_history.csv" }
+  ],
+  angelone: [
+    { label: "Holdings", url: "/samples/angelone_holdings.csv" },
+    { label: "Tradebook (XIRR)", url: "/samples/angelone_tradebook.csv" }
   ]
 };
 
@@ -92,6 +96,7 @@ export function CSVUploader() {
             <option value="zerodha">Zerodha Console</option>
             <option value="groww">Groww Holdings</option>
             <option value="indmoney">INDmoney Portfolio</option>
+            <option value="angelone">AngelOne Details</option>
           </select>
           <button
             onClick={handleReset}

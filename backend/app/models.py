@@ -7,6 +7,7 @@ class BrokerType(str, Enum):
     ZERODHA = "zerodha"
     GROWW = "groww"
     INDMONEY = "indmoney"
+    ANGELONE = "angelone"
     RSU = "rsu"
 
 class AssetClass(str, Enum):

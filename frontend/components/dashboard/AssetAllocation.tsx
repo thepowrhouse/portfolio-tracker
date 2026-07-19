@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { usePortfolio } from "@/store/PortfolioContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-const BROKER_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#a855f7"];
+const BROKER_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#a855f7"];
 const INDUSTRY_COLORS = [
   "#3b82f6", "#ef4444", "#22c55e", "#a855f7", "#f59e0b", "#ec4899",
   "#06b6d4", "#8b5cf6", "#f97316", "#14b8a6", "#6366f1", "#f43f5e"
@@ -26,7 +26,8 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
         zerodha: { name: "Zerodha", value: 0, color: BROKER_COLORS[0] },
         groww: { name: "Groww", value: 0, color: BROKER_COLORS[1] },
         indmoney: { name: "INDmoney", value: 0, color: BROKER_COLORS[2] },
-        other: { name: "Other", value: 0, color: BROKER_COLORS[3] },
+        angelone: { name: "AngelOne", value: 0, color: BROKER_COLORS[3] },
+        other: { name: "Other", value: 0, color: BROKER_COLORS[4] },
       };
 
       portfolio.holdings.forEach((h) => {
@@ -38,6 +39,7 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
         if (h.broker === "zerodha") brokerMap.zerodha.value += value;
         else if (h.broker === "groww") brokerMap.groww.value += value;
         else if (h.broker === "indmoney") brokerMap.indmoney.value += value;
+        else if (h.broker === "angelone") brokerMap.angelone.value += value;
         else brokerMap.other.value += value;
       });
 
