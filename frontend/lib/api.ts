@@ -14,6 +14,12 @@ async function getHeaders(customHeaders: Record<string, string> = {}) {
   if (session?.user?.email) {
     headers["X-User-Email"] = session.user.email;
   }
+  if (typeof window !== "undefined") {
+    if (!sessionStorage.getItem("sessionId")) {
+      sessionStorage.setItem("sessionId", Math.random().toString(36).substring(2, 10));
+    }
+    headers["X-Session-ID"] = sessionStorage.getItem("sessionId") || "";
+  }
   return headers;
 }
 

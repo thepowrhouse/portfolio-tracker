@@ -11,10 +11,18 @@ function ActivityTracker() {
     if (status === "authenticated" && session?.user?.email && !trackedRef.current) {
       trackedRef.current = true;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      
+      let sessionId = sessionStorage.getItem("sessionId");
+      if (!sessionId) {
+        sessionId = Math.random().toString(36).substring(2, 10);
+        sessionStorage.setItem("sessionId", sessionId);
+      }
+      
       fetch(`${apiUrl}/activity/login`, {
         method: "POST",
         headers: {
-          "x-user-email": session.user.email
+          "x-user-email": session.user.email,
+          "x-session-id": sessionId
         }
       }).catch(() => {});
     }

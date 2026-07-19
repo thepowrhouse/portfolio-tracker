@@ -96,21 +96,23 @@ export default async function AdminDashboard() {
             </div>
             <div className="overflow-y-auto max-h-[600px] p-2">
               <table className="w-full text-left text-sm text-slate-300">
-                <thead className="text-xs text-slate-500 uppercase bg-slate-900/50 sticky top-0 backdrop-blur-md">
-                  <tr>
+                <thead>
+                  <tr className="bg-slate-800/50 text-xs text-slate-400 text-left uppercase tracking-wider">
                     <th className="px-4 py-3 font-medium rounded-l-lg">Email</th>
+                    <th className="px-4 py-3 font-medium">Session ID</th>
                     <th className="px-4 py-3 font-medium rounded-r-lg text-right">Timestamp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recent_logins.length === 0 ? (
                     <tr>
-                      <td colSpan={2} className="px-4 py-8 text-center text-slate-500">No recent logins</td>
+                      <td colSpan={3} className="px-4 py-8 text-center text-slate-500">No recent logins</td>
                     </tr>
                   ) : (
                     recent_logins.map((login: any) => (
-                      <tr key={login.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="px-4 py-3 truncate max-w-[200px]" title={login.email}>{login.email}</td>
+                      <tr key={login.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-colors">
+                        <td className="px-4 py-3 text-sm text-slate-300">{login.email}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-slate-500">{login.session_id || "N/A"}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-400">
                           {new Date(login.timestamp).toLocaleString()}
                         </td>
@@ -129,9 +131,10 @@ export default async function AdminDashboard() {
             </div>
             <div className="overflow-y-auto max-h-[600px] p-2">
               <table className="w-full text-left text-sm text-slate-300">
-                <thead className="text-xs text-slate-500 uppercase bg-slate-900/50 sticky top-0 backdrop-blur-md">
-                  <tr>
+                <thead>
+                  <tr className="bg-slate-800/50 text-xs text-slate-400 text-left uppercase tracking-wider">
                     <th className="px-4 py-3 font-medium rounded-l-lg">Email</th>
+                    <th className="px-4 py-3 font-medium">Session ID</th>
                     <th className="px-4 py-3 font-medium">Broker</th>
                     <th className="px-4 py-3 font-medium">Parsed</th>
                     <th className="px-4 py-3 font-medium text-right">Timestamp</th>
@@ -141,13 +144,14 @@ export default async function AdminDashboard() {
                 <tbody>
                   {recent_uploads.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No recent uploads</td>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No recent uploads</td>
                     </tr>
                   ) : (
                     recent_uploads.map((upload: any) => (
-                      <tr key={upload.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="px-4 py-3 truncate max-w-[150px]" title={upload.email}>{upload.email}</td>
-                        <td className="px-4 py-3 capitalize">{upload.broker}</td>
+                      <tr key={upload.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-colors">
+                        <td className="px-4 py-3 text-sm text-slate-300">{upload.email}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-slate-500">{upload.session_id || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm capitalize text-slate-300">{upload.broker}</td>
                         <td className="px-4 py-3 text-emerald-400 font-medium tabular-nums">+{upload.records_parsed}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-400">
                           {new Date(upload.timestamp).toLocaleString()}

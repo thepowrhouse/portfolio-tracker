@@ -40,6 +40,9 @@ async def get_forex_rate() -> float:
 def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
     return x_user_email
 
+def get_session_id(x_session_id: str = Header(default=None)) -> str:
+    return x_session_id
+
 def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     """Fetch current prices and compute P&L in parallel."""
     import concurrent.futures
@@ -119,7 +122,8 @@ async def get_portfolio_state(email: str = Depends(get_user_email)):
 async def sync_portfolio(
     broker: BrokerType,
     file: UploadFile = File(...),
-    email: str = Depends(get_user_email)
+    email: str = Depends(get_user_email),
+    session_id: str = Depends(get_session_id)
 ):
     """
     CRITICAL ENDPOINT: CSV Upload + Reconciliation.
@@ -165,7 +169,7 @@ async def sync_portfolio(
         file_path = os.path.join(UPLOAD_DIR, filename)
         with open(file_path, "wb") as f:
             f.write(contents)
-        log_upload(email, broker.value, len(csv_holdings), file_path)
+        log_upload(email, broker.value, len(csv_holdings), file_path, session_id)
         
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
