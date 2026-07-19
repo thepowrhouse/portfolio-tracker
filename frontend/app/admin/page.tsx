@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 async function getAdminData(token: string) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  // Node.js fetch prefers IPv6, which fails if Uvicorn is bound to IPv4 0.0.0.0
+  apiUrl = apiUrl.replace("localhost", "127.0.0.1");
   try {
     const res = await fetch(`${apiUrl}/admin/dashboard`, {
       headers: {
@@ -11,9 +13,13 @@ async function getAdminData(token: string) {
       },
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("Admin dashboard fetch failed:", res.status);
+      return null;
+    }
     return await res.json();
   } catch (err) {
+    console.error("Admin dashboard fetch error:", err);
     return null;
   }
 }
