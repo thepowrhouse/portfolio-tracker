@@ -8,7 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
-from app.db import log_upload, is_blacklisted
+from app.db import log_upload, is_blacklisted, is_approved
 import httpx
 import os
 from datetime import datetime
@@ -40,9 +40,12 @@ async def get_forex_rate() -> float:
 def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
     return x_user_email
 
-def verify_not_blacklisted(email: str = Depends(get_user_email)) -> str:
-    if email != "anonymous" and is_blacklisted(email):
-        raise HTTPException(status_code=403, detail="Account is blacklisted")
+def verify_access(email: str = Depends(get_user_email)) -> str:
+    if email != "anonymous":
+        if is_blacklisted(email):
+            raise HTTPException(status_code=403, detail="Account is blacklisted")
+        if not is_approved(email):
+            raise HTTPException(status_code=403, detail="Account is not approved")
     return email
 
 def get_session_id(x_session_id: str = Header(default=None)) -> str:
@@ -102,7 +105,7 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     return holdings
 
 @router.get("/state", response_model=PortfolioState)
-async def get_portfolio_state(email: str = Depends(verify_not_blacklisted)):
+async def get_portfolio_state(email: str = Depends(verify_access)):
     global _portfolio_db
     user_portfolio = _portfolio_db[email]
     rate = await get_forex_rate()
@@ -127,7 +130,7 @@ async def get_portfolio_state(email: str = Depends(verify_not_blacklisted)):
 async def sync_portfolio(
     broker: BrokerType,
     file: UploadFile = File(...),
-    email: str = Depends(verify_not_blacklisted),
+    email: str = Depends(verify_access),
     session_id: str = Depends(get_session_id)
 ):
     """
@@ -191,7 +194,7 @@ async def sync_portfolio(
     }
 
 @router.post("/manual")
-async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_not_blacklisted)):
+async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_access)):
     """For RSU or manual entries."""
     global _portfolio_db
     user_portfolio = _portfolio_db[email]
@@ -209,14 +212,14 @@ async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_no
     return new_h
 
 @router.delete("/{holding_id}")
-async def delete_holding(holding_id: str, email: str = Depends(verify_not_blacklisted)):
+async def delete_holding(holding_id: str, email: str = Depends(verify_access)):
     global _portfolio_db
     user_portfolio = _portfolio_db[email]
     _portfolio_db[email] = [h for h in user_portfolio if h.id != holding_id]
     return {"message": "Deleted"}
 
 @router.post("/reset")
-async def reset_portfolio(email: str = Depends(verify_not_blacklisted)):
+async def reset_portfolio(email: str = Depends(verify_access)):
     global _portfolio_db
     _portfolio_db[email].clear()
     return {"message": "Portfolio reset successfully"}

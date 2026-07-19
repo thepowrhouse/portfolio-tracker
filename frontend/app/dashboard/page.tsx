@@ -8,12 +8,15 @@ import { SectorPerformanceTable } from "@/components/sectors/SectorPerformanceTa
 import { usePortfolio } from "@/store/PortfolioContext";
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const { portfolio, lastUpdated, refreshPortfolio } = usePortfolio();
   const [activeView, setActiveView] = useState<"Holdings" | "Sectors">("Holdings");
   const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
   if (status === "loading") {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading...</div>;
@@ -54,6 +57,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-8">
+              {error === "access_denied" && (
+                <div className="mb-6 rounded-lg bg-red-500/10 border border-red-500/20 p-4">
+                  <p className="text-sm text-red-400 text-center">
+                    Access Denied. You are not on the approved users list, or you have been blacklisted.
+                  </p>
+                </div>
+              )}
               <button
                 onClick={() => signIn("google")}
                 className="group relative flex w-full justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"

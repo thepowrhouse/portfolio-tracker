@@ -18,5 +18,19 @@ async def login_activity(request: Request, email: str = Depends(get_user_email),
 
 @router.get("/check-blacklist")
 async def check_blacklist(email: str):
-    """Check if an email is blacklisted."""
+    """Check if a user is explicitly blacklisted."""
+    from app.db import is_blacklisted
     return {"is_blacklisted": is_blacklisted(email)}
+
+@router.get("/check-access")
+async def check_access(email: str):
+    """Check if a user is approved and not blacklisted."""
+    from app.db import is_blacklisted, is_approved
+    
+    if is_blacklisted(email):
+        return {"has_access": False, "reason": "blacklisted"}
+    
+    if not is_approved(email):
+        return {"has_access": False, "reason": "not_approved"}
+        
+    return {"has_access": True}

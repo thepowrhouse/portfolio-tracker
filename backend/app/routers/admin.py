@@ -45,6 +45,29 @@ async def remove_from_blacklist(email: str):
     remove_blacklisted_user(email)
     return {"status": "success", "message": f"{email} has been removed from blacklist"}
 
+@router.get("/approved")
+async def get_approved(x_admin_password: str = Depends(verify_admin)):
+    """Get list of all approved users."""
+    from app.db import get_approved_users
+    return get_approved_users()
+
+class ApprovedUserCreate(BaseModel):
+    email: str
+
+@router.post("/approved")
+async def add_approved(user: ApprovedUserCreate, x_admin_password: str = Depends(verify_admin)):
+    """Approve a user."""
+    from app.db import approve_user
+    approve_user(user.email)
+    return {"message": "User approved successfully"}
+
+@router.delete("/approved/{email}")
+async def remove_approved(email: str, x_admin_password: str = Depends(verify_admin)):
+    """Remove a user from approved list."""
+    from app.db import remove_approved_user
+    remove_approved_user(email)
+    return {"message": "User removed from approved list"}
+
 @router.get("/download/{upload_id}")
 async def download_upload(upload_id: int, token: str = Query(None)):
     verify_admin(token)

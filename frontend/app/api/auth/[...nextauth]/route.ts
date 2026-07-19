@@ -13,16 +13,16 @@ const handler = NextAuth({
       try {
         if (!user.email) return false;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiUrl}/activity/check-blacklist?email=${user.email}`, { cache: 'no-store' });
+        const res = await fetch(`${apiUrl}/activity/check-access?email=${user.email}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.is_blacklisted) {
-            console.log(`User ${user.email} is blacklisted, denying login.`);
-            return false;
+          if (!data.has_access) {
+            console.log(`User ${user.email} denied access.`);
+            return "/?error=access_denied";
           }
         }
       } catch (err) {
-        console.error("Blacklist check failed during signIn", err);
+        console.error("Access check failed during signIn", err);
       }
       return true;
     },

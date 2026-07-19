@@ -44,6 +44,15 @@ def init_db():
         )
     """)
     
+    # Create approved_users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS approved_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            timestamp TEXT NOT NULL
+        )
+    """)
+    
     # Try adding new columns to existing tables
     try:
         cursor.execute("ALTER TABLE user_uploads ADD COLUMN file_path TEXT")
@@ -164,6 +173,44 @@ def get_blacklisted_users() -> List[Dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT email, reason, timestamp FROM blacklisted_users ORDER BY timestamp DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def approve_user(email: str):
+    """Add a user to the approved list."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO approved_users (email, timestamp) VALUES (?, ?)",
+        (email, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def remove_approved_user(email: str):
+    """Remove a user from the approved list."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM approved_users WHERE email = ?", (email,))
+    conn.commit()
+    conn.close()
+
+def is_approved(email: str) -> bool:
+    """Check if a user is approved."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM approved_users WHERE email = ?", (email,))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
+
+def get_approved_users() -> List[Dict[str, Any]]:
+    """Fetch all approved users."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT email, timestamp FROM approved_users ORDER BY timestamp DESC")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
