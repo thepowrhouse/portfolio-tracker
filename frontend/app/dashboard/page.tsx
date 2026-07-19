@@ -9,8 +9,9 @@ import { usePortfolio } from "@/store/PortfolioContext";
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { data: session, status } = useSession();
   const { portfolio, lastUpdated, refreshPortfolio } = usePortfolio();
   const [activeView, setActiveView] = useState<"Holdings" | "Sectors">("Holdings");
@@ -179,5 +180,13 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading Dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
