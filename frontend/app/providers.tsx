@@ -13,9 +13,12 @@ function ActivityTracker() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       
       let sessionId = sessionStorage.getItem("sessionId");
-      if (!sessionId) {
+      let sessionEmail = sessionStorage.getItem("sessionEmail");
+      
+      if (!sessionId || sessionEmail !== session.user.email) {
         sessionId = Math.random().toString(36).substring(2, 10);
         sessionStorage.setItem("sessionId", sessionId);
+        sessionStorage.setItem("sessionEmail", session.user.email);
       }
       
       fetch(`${apiUrl}/activity/login`, {

@@ -91,14 +91,6 @@ export default function AccessManager({ token, initialAccessList }: { token: str
                           Blacklist
                         </button>
                       )}
-                      {u.status === "blacklisted" && (
-                        <button
-                          onClick={() => handleUpdateStatus(u.email, "pending")}
-                          className="text-xs font-medium text-slate-400 hover:text-slate-300 transition-colors px-2 py-1 rounded-md hover:bg-slate-500/10 border border-transparent hover:border-slate-500/20"
-                        >
-                          Revoke Blacklist
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
