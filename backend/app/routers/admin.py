@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 import os
 import sqlite3
 from pydantic import BaseModel
-from app.db import get_recent_logins, get_recent_uploads, get_stats, DB_PATH, blacklist_user, remove_blacklisted_user, get_blacklisted_users
+from app.db import get_recent_logins, get_recent_uploads, get_stats, DB_PATH
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Header, Request
-from app.db import log_login, is_blacklisted
+from app.db import log_login
 
 router = APIRouter(prefix="/activity", tags=["activity"])
 
@@ -16,11 +16,6 @@ async def login_activity(request: Request, email: str = Depends(get_user_email),
         log_login(email, session_id, ip_address)
     return {"status": "logged"}
 
-@router.get("/check-blacklist")
-async def check_blacklist(email: str):
-    """Check if a user is explicitly blacklisted."""
-    from app.db import is_blacklisted
-    return {"is_blacklisted": is_blacklisted(email)}
 
 @router.get("/check-access")
 async def check_access(email: str):

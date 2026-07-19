@@ -22,11 +22,12 @@ const handler = NextAuth({
             if (data.reason === "blacklisted") return "/?error=blacklisted";
             return "/?error=access_denied";
           }
+          return true; // Explicitly return true only when has_access is true
         }
       } catch (err) {
         console.error("Access check failed during signIn", err);
       }
-      return true;
+      return "/?error=access_denied"; // Fail closed by default if backend is down
     },
     async session({ session, token }) {
       if (session.user) {
