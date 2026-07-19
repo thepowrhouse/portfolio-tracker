@@ -640,7 +640,28 @@ def _parse_angelone_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHo
     
     for dt, name, qty, val, t_type, display_name in transactions:
         # We don't have ISIN in tradebook, so we try resolving by name
-        ticker, resolved_name = resolve_ticker(name)
+        
+        # Common AngelOne Scrip names to Ticker mapping
+        ANGELONE_NAME_MAP = {
+            "VALOR ESTATE LIMITED": "DBREALTY",
+            "IDFC FIRST BANK LIMITED": "IDFCFIRSTB",
+            "TRANS & RECTI. LTD": "TRIL",
+            "PRESTIGE ESTATE LTD": "PRESTIGE",
+            "APOLLO MICRO SYSTEMS LTD": "APOLLOMICRO",
+            "GLAND PHARMA LIMITED": "GLAND",
+            "ADVENT HOTELS INTERNATI L": "AHL",
+            "NOCIL LIMITED": "NOCIL"
+        }
+        
+        # Try to use the direct map first
+        if name in ANGELONE_NAME_MAP:
+            ticker = ANGELONE_NAME_MAP[name]
+            resolved_name = name
+        else:
+            ticker, resolved_name = resolve_ticker(name)
+            # If resolve_ticker just returns the name (e.g. "FOO LIMITED"), fallback to the first word as the ticker
+            if ticker == name and len(name.split()) > 1:
+                ticker = name.split()[0]
         
         if ticker not in agg_map:
             agg_map[ticker] = AggHolding(resolved_name)
