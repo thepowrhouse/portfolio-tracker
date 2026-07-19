@@ -3,5 +3,6 @@ import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   cookies().delete("admin_token");
-  return NextResponse.redirect(new URL("/admin/login", request.url));
+  const origin = request.headers.get("origin") || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return NextResponse.redirect(new URL("/admin/login", origin));
 }
