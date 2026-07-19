@@ -152,11 +152,11 @@ export default async function AdminDashboard() {
                         <td className="px-4 py-3 text-right tabular-nums text-slate-400">
                           {new Date(upload.timestamp).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
                           {upload.file_path ? (
                             <a 
                               href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/admin/download/${upload.id}?token=${token}`}
-                              className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1.5 rounded-md border border-indigo-500/20"
+                              className="inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1.5 rounded-md border border-indigo-500/20 whitespace-nowrap"
                               download
                             >
                               Download CSV
