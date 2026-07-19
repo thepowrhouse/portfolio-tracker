@@ -34,6 +34,16 @@ def init_db():
         )
     """)
     
+    # Create blacklisted_users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS blacklisted_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            reason TEXT,
+            timestamp TEXT NOT NULL
+        )
+    """)
+    
     # Try adding new columns to existing tables
     try:
         cursor.execute("ALTER TABLE user_uploads ADD COLUMN file_path TEXT")
@@ -119,3 +129,41 @@ def get_stats() -> Dict[str, Any]:
         "unique_users": unique_users,
         "total_uploads": total_uploads
     }
+
+def blacklist_user(email: str, reason: str = None):
+    """Add a user to the blacklist."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO blacklisted_users (email, reason, timestamp) VALUES (?, ?, ?)",
+        (email, reason, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def remove_blacklisted_user(email: str):
+    """Remove a user from the blacklist."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM blacklisted_users WHERE email = ?", (email,))
+    conn.commit()
+    conn.close()
+
+def is_blacklisted(email: str) -> bool:
+    """Check if a user is blacklisted."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM blacklisted_users WHERE email = ?", (email,))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None
+
+def get_blacklisted_users() -> List[Dict[str, Any]]:
+    """Fetch all blacklisted users."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT email, reason, timestamp FROM blacklisted_users ORDER BY timestamp DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
