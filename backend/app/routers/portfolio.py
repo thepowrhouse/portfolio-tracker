@@ -8,6 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
+from app.db import log_upload
 import httpx
 from datetime import datetime
 
@@ -154,6 +155,10 @@ async def sync_portfolio(
     # Enrich with prices
     enriched = enrich_holdings(user_portfolio)
     
+    # Log the upload activity
+    if email and email != "anonymous":
+        log_upload(email, broker.value, len(csv_holdings))
+        
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
         "added": len([h for h in csv_holdings if not any(

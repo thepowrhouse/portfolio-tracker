@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import portfolio, analysis, sectors
+from app.routers import portfolio, analysis, sectors, admin, activity
+from app.db import init_db
 
 app = FastAPI(
     title="Portfolio Tracker API",
@@ -25,6 +26,12 @@ app.add_middleware(
 app.include_router(portfolio.router)
 app.include_router(analysis.router)
 app.include_router(sectors.router)
+app.include_router(admin.router)
+app.include_router(activity.router)
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 @app.get("/health")
 async def health():
