@@ -68,7 +68,21 @@ export default function AccessManager({ token, initialAccessList }: { token: str
             ) : (
               initialAccessList.map((u: any) => (
                 <tr key={u.email} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-colors">
-                  <td className="px-4 py-3 text-sm text-slate-300">{u.email}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      {u.picture ? (
+                        <img src={u.picture} alt="Avatar" className="w-8 h-8 rounded-full bg-slate-800" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-medium text-slate-400">
+                          {u.email.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        {u.name && <p className="text-sm font-medium text-slate-200">{u.name}</p>}
+                        <p className="text-xs text-slate-400">{u.email}</p>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">{getStatusBadge(u.status)}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-slate-500">
                     {new Date(u.timestamp).toLocaleString()}

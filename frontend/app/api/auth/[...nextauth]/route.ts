@@ -13,7 +13,9 @@ const handler = NextAuth({
       try {
         if (!user.email) return false;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiUrl}/activity/check-access?email=${user.email}`, { cache: 'no-store' });
+        const name = encodeURIComponent(user.name || "");
+        const picture = encodeURIComponent(user.image || "");
+        const res = await fetch(`${apiUrl}/activity/check-access?email=${user.email}&name=${name}&picture=${picture}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (!data.has_access) {

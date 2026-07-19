@@ -16,18 +16,22 @@ async def login_activity(request: Request, email: str = Depends(get_user_email),
         log_login(email, session_id, ip_address)
     return {"status": "logged"}
 
+from typing import Optional
 
 @router.get("/check-access")
-async def check_access(email: str):
+async def check_access(email: str, name: Optional[str] = None, picture: Optional[str] = None):
     """Check if a user is approved, pending, or blacklisted."""
-    from app.db import get_user_status, set_user_status
+    from app.db import get_user_status, set_user_status, update_user_info
     
     status = get_user_status(email)
     
     # If this is a brand new user, put them in 'pending' status automatically
     if not status:
-        set_user_status(email, "pending")
+        set_user_status(email, "pending", name=name, picture=picture)
         status = "pending"
+    else:
+        # Update name and picture if provided and user already exists
+        update_user_info(email, name, picture)
     
     if status == "blacklisted":
         return {"has_access": False, "reason": "blacklisted"}

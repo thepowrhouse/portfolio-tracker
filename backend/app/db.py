@@ -40,9 +40,20 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
             status TEXT NOT NULL, -- 'pending', 'approved', 'blacklisted'
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL,
+            name TEXT,
+            picture TEXT
         )
     """)
+    
+    try:
+        cursor.execute("ALTER TABLE user_access ADD COLUMN name TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE user_access ADD COLUMN picture TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     # Try adding new columns to existing tables
     try:
@@ -139,19 +150,34 @@ def get_user_status(email: str) -> Optional[str]:
     conn.close()
     return result[0] if result else None
 
-def set_user_status(email: str, status: str):
+def set_user_status(email: str, status: str, name: str = None, picture: str = None):
     """Set or update the status of a user."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO user_access (email, status, timestamp) 
-        VALUES (?, ?, ?)
+        INSERT INTO user_access (email, status, timestamp, name, picture) 
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(email) DO UPDATE SET 
             status=excluded.status, 
-            timestamp=excluded.timestamp
+            timestamp=excluded.timestamp,
+            name=COALESCE(excluded.name, name),
+            picture=COALESCE(excluded.picture, picture)
         """,
-        (email, status, datetime.utcnow().isoformat())
+        (email, status, datetime.utcnow().isoformat(), name, picture)
+    )
+    conn.commit()
+    conn.close()
+
+def update_user_info(email: str, name: str = None, picture: str = None):
+    """Update user info without changing status."""
+    if not name and not picture:
+        return
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE user_access SET name = COALESCE(?, name), picture = COALESCE(?, picture) WHERE email = ?",
+        (name, picture, email)
     )
     conn.commit()
     conn.close()
@@ -161,7 +187,7 @@ def get_all_user_access() -> List[Dict[str, Any]]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT email, status, timestamp FROM user_access ORDER BY timestamp DESC")
+    cursor.execute("SELECT email, status, timestamp, name, picture FROM user_access ORDER BY timestamp DESC")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
