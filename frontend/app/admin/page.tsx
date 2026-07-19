@@ -100,19 +100,21 @@ export default async function AdminDashboard() {
                   <tr className="bg-slate-800/50 text-xs text-slate-400 text-left uppercase tracking-wider">
                     <th className="px-4 py-3 font-medium rounded-l-lg">Email</th>
                     <th className="px-4 py-3 font-medium">Session ID</th>
+                    <th className="px-4 py-3 font-medium">IP Address</th>
                     <th className="px-4 py-3 font-medium rounded-r-lg text-right">Timestamp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recent_logins.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-4 py-8 text-center text-slate-500">No recent logins</td>
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No recent logins</td>
                     </tr>
                   ) : (
                     recent_logins.map((login: any) => (
                       <tr key={login.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/20 transition-colors">
                         <td className="px-4 py-3 text-sm text-slate-300">{login.email}</td>
                         <td className="px-4 py-3 text-sm font-mono text-slate-500">{login.session_id || "N/A"}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-slate-500">{login.ip_address || "N/A"}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-400">
                           {new Date(login.timestamp).toLocaleString()}
                         </td>

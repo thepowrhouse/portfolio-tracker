@@ -16,7 +16,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL,
             timestamp TEXT NOT NULL,
-            session_id TEXT
+            session_id TEXT,
+            ip_address TEXT
         )
     """)
     
@@ -46,17 +47,21 @@ def init_db():
         cursor.execute("ALTER TABLE user_logins ADD COLUMN session_id TEXT")
     except sqlite3.OperationalError:
         pass
+    try:
+        cursor.execute("ALTER TABLE user_logins ADD COLUMN ip_address TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     conn.commit()
     conn.close()
 
-def log_login(email: str, session_id: str = None):
+def log_login(email: str, session_id: str = None, ip_address: str = None):
     """Log a user login event."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO user_logins (email, timestamp, session_id) VALUES (?, ?, ?)",
-        (email, datetime.utcnow().isoformat(), session_id)
+        "INSERT INTO user_logins (email, timestamp, session_id, ip_address) VALUES (?, ?, ?, ?)",
+        (email, datetime.utcnow().isoformat(), session_id, ip_address)
     )
     conn.commit()
     conn.close()
@@ -78,7 +83,7 @@ def get_recent_logins(limit: int = 50) -> List[Dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, email, timestamp, session_id FROM user_logins ORDER BY timestamp DESC LIMIT ?",
+        "SELECT id, email, timestamp, session_id, ip_address FROM user_logins ORDER BY timestamp DESC LIMIT ?",
         (limit,)
     )
     rows = cursor.fetchall()
