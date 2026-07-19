@@ -33,7 +33,16 @@ class Reconciler:
             for existing in self.current_map.values():
                 if existing.broker == broker and existing.ticker in new_map:
                     order_h = new_map[existing.ticker]
-                    existing.cashflows = order_h.cashflows
+                    
+                    # CRITICAL: Only accept cashflows if the tradebook net quantity matches the holding quantity!
+                    # If they don't match, the tradebook is a partial history (missing past buys/sells).
+                    # Using partial cashflows against the FULL current holding value results in wildly inaccurate XIRRs.
+                    qty_diff = abs(existing.quantity - order_h.quantity)
+                    if qty_diff < 0.05: # Allow small floating point differences
+                        existing.cashflows = order_h.cashflows
+                    else:
+                        print(f"[{broker.value}] Rejecting cashflows for {existing.ticker}: Tradebook Qty ({order_h.quantity}) != Holding Qty ({existing.quantity}). Falling back to simple P&L.")
+                        existing.cashflows = []
                     
                     # Only copy cashflows to compute XIRR. 
                     # Do NOT overwrite avg_price from order history because order history
