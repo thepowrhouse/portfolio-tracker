@@ -1,38 +1,32 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import BlacklistManager from "./components/BlacklistManager";
-import ApprovedUsersManager from "./components/ApprovedUsersManager";
+import AccessManager from "./components/AccessManager";
 
 async function getAdminData(token: string) {
   let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   // Node.js fetch prefers IPv6, which fails if Uvicorn is bound to IPv4 0.0.0.0
   apiUrl = apiUrl.replace("localhost", "127.0.0.1");
   try {
-    const [dashRes, blacklistRes, approvedRes] = await Promise.all([
+    const [dashRes, accessRes] = await Promise.all([
       fetch(`${apiUrl}/admin/dashboard`, {
         headers: { "x-admin-password": token },
         cache: "no-store",
       }),
-      fetch(`${apiUrl}/admin/blacklist`, {
-        headers: { "x-admin-password": token },
-        cache: "no-store",
-      }),
-      fetch(`${apiUrl}/admin/approved`, {
+      fetch(`${apiUrl}/admin/access`, {
         headers: { "x-admin-password": token },
         cache: "no-store",
       })
     ]);
 
-    if (!dashRes.ok || !blacklistRes.ok || !approvedRes.ok) {
+    if (!dashRes.ok || !accessRes.ok) {
       console.error("Admin dashboard fetch failed");
       return null;
     }
 
     const dashData = await dashRes.json();
-    const blacklistData = await blacklistRes.json();
-    const approvedData = await approvedRes.json();
-    return { ...dashData, blacklist: blacklistData, approved: approvedData };
+    const accessData = await accessRes.json();
+    return { ...dashData, accessList: accessData };
   } catch (err) {
     console.error("Admin dashboard fetch error:", err);
     return null;
@@ -51,7 +45,7 @@ export default async function AdminDashboard() {
     redirect("/admin/login");
   }
 
-  const { stats, recent_logins, recent_uploads, blacklist, approved } = data;
+  const { stats, recent_logins, recent_uploads, accessList } = data;
 
   return (
     <div className="min-h-screen bg-slate-950 p-8">
@@ -195,11 +189,8 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* Approved Users */}
-        <ApprovedUsersManager token={token} initialApprovedUsers={approved} />
-
-        {/* Blacklisted Users */}
-        <BlacklistManager token={token} initialBlacklist={blacklist} />
+        {/* Access Management */}
+        <AccessManager token={token} initialAccessList={accessList} />
 
       </div>
     </div>

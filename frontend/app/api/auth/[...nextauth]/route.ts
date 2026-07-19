@@ -17,7 +17,9 @@ const handler = NextAuth({
         if (res.ok) {
           const data = await res.json();
           if (!data.has_access) {
-            console.log(`User ${user.email} denied access.`);
+            console.log(`User ${user.email} denied access. Reason: ${data.reason}`);
+            if (data.reason === "pending") return "/?error=pending";
+            if (data.reason === "blacklisted") return "/?error=blacklisted";
             return "/?error=access_denied";
           }
         }

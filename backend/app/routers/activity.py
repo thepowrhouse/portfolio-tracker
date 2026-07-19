@@ -24,13 +24,21 @@ async def check_blacklist(email: str):
 
 @router.get("/check-access")
 async def check_access(email: str):
-    """Check if a user is approved and not blacklisted."""
-    from app.db import is_blacklisted, is_approved
+    """Check if a user is approved, pending, or blacklisted."""
+    from app.db import get_user_status, set_user_status
     
-    if is_blacklisted(email):
+    status = get_user_status(email)
+    
+    # If this is a brand new user, put them in 'pending' status automatically
+    if not status:
+        set_user_status(email, "pending")
+        status = "pending"
+    
+    if status == "blacklisted":
         return {"has_access": False, "reason": "blacklisted"}
-    
-    if not is_approved(email):
-        return {"has_access": False, "reason": "not_approved"}
+    elif status == "pending":
+        return {"has_access": False, "reason": "pending"}
+    elif status == "approved":
+        return {"has_access": True}
         
-    return {"has_access": True}
+    return {"has_access": False, "reason": "unknown"}

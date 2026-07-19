@@ -8,7 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
-from app.db import log_upload, is_blacklisted, is_approved
+from app.db import log_upload, get_user_status
 import httpx
 import os
 from datetime import datetime
@@ -42,9 +42,10 @@ def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
 
 def verify_access(email: str = Depends(get_user_email)) -> str:
     if email != "anonymous":
-        if is_blacklisted(email):
+        status = get_user_status(email)
+        if status == "blacklisted":
             raise HTTPException(status_code=403, detail="Account is blacklisted")
-        if not is_approved(email):
+        if status != "approved":
             raise HTTPException(status_code=403, detail="Account is not approved")
     return email
 

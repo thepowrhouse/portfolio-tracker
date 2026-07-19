@@ -58,10 +58,24 @@ function DashboardContent() {
             </div>
 
             <div className="mt-8">
+              {error === "pending" && (
+                <div className="mb-6 rounded-lg bg-amber-500/10 border border-amber-500/20 p-4">
+                  <p className="text-sm text-amber-400 text-center">
+                    Your account is pending admin approval. Please wait until your access is approved.
+                  </p>
+                </div>
+              )}
+              {error === "blacklisted" && (
+                <div className="mb-6 rounded-lg bg-red-500/10 border border-red-500/20 p-4">
+                  <p className="text-sm text-red-400 text-center">
+                    Access Denied. Your account has been suspended.
+                  </p>
+                </div>
+              )}
               {error === "access_denied" && (
                 <div className="mb-6 rounded-lg bg-red-500/10 border border-red-500/20 p-4">
                   <p className="text-sm text-red-400 text-center">
-                    Access Denied. You are not on the approved users list, or you have been blacklisted.
+                    Access Denied. You do not have permission to log in.
                   </p>
                 </div>
               )}

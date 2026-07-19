@@ -28,45 +28,25 @@ async def get_dashboard_data():
         "recent_uploads": get_recent_uploads(100)
     }
 
-@router.get("/blacklist", dependencies=[Depends(verify_admin)])
-async def get_blacklist():
-    """Get all blacklisted users."""
-    return get_blacklisted_users()
+@router.get("/access")
+async def get_access_list(x_admin_password: str = Depends(verify_admin)):
+    """Get all user access records."""
+    from app.db import get_all_user_access
+    return get_all_user_access()
 
-@router.post("/blacklist", dependencies=[Depends(verify_admin)])
-async def add_to_blacklist(req: BlacklistRequest):
-    """Add a user to the blacklist."""
-    blacklist_user(req.email, req.reason)
-    return {"status": "success", "message": f"{req.email} has been blacklisted"}
-
-@router.delete("/blacklist/{email}", dependencies=[Depends(verify_admin)])
-async def remove_from_blacklist(email: str):
-    """Remove a user from the blacklist."""
-    remove_blacklisted_user(email)
-    return {"status": "success", "message": f"{email} has been removed from blacklist"}
-
-@router.get("/approved")
-async def get_approved(x_admin_password: str = Depends(verify_admin)):
-    """Get list of all approved users."""
-    from app.db import get_approved_users
-    return get_approved_users()
-
-class ApprovedUserCreate(BaseModel):
+class UserAccessUpdate(BaseModel):
     email: str
+    status: str
 
-@router.post("/approved")
-async def add_approved(user: ApprovedUserCreate, x_admin_password: str = Depends(verify_admin)):
-    """Approve a user."""
-    from app.db import approve_user
-    approve_user(user.email)
-    return {"message": "User approved successfully"}
-
-@router.delete("/approved/{email}")
-async def remove_approved(email: str, x_admin_password: str = Depends(verify_admin)):
-    """Remove a user from approved list."""
-    from app.db import remove_approved_user
-    remove_approved_user(email)
-    return {"message": "User removed from approved list"}
+@router.post("/access")
+async def update_access(user: UserAccessUpdate, x_admin_password: str = Depends(verify_admin)):
+    """Update a user's access status."""
+    if user.status not in ["pending", "approved", "blacklisted"]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+        
+    from app.db import set_user_status
+    set_user_status(user.email, user.status)
+    return {"message": f"User {user.email} status updated to {user.status}"}
 
 @router.get("/download/{upload_id}")
 async def download_upload(upload_id: int, token: str = Query(None)):

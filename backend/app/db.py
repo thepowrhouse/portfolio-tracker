@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "activity.db")
 
@@ -34,21 +34,12 @@ def init_db():
         )
     """)
     
-    # Create blacklisted_users table
+    # Create unified user_access table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS blacklisted_users (
+        CREATE TABLE IF NOT EXISTS user_access (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
-            reason TEXT,
-            timestamp TEXT NOT NULL
-        )
-    """)
-    
-    # Create approved_users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS approved_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL, -- 'pending', 'approved', 'blacklisted'
             timestamp TEXT NOT NULL
         )
     """)
@@ -139,78 +130,38 @@ def get_stats() -> Dict[str, Any]:
         "total_uploads": total_uploads
     }
 
-def blacklist_user(email: str, reason: str = None):
-    """Add a user to the blacklist."""
+def get_user_status(email: str) -> Optional[str]:
+    """Get the access status of a user (pending, approved, blacklisted). Returns None if not found."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT status FROM user_access WHERE email = ?", (email,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+def set_user_status(email: str, status: str):
+    """Set or update the status of a user."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT OR IGNORE INTO blacklisted_users (email, reason, timestamp) VALUES (?, ?, ?)",
-        (email, reason, datetime.utcnow().isoformat())
+        """
+        INSERT INTO user_access (email, status, timestamp) 
+        VALUES (?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET 
+            status=excluded.status, 
+            timestamp=excluded.timestamp
+        """,
+        (email, status, datetime.utcnow().isoformat())
     )
     conn.commit()
     conn.close()
 
-def remove_blacklisted_user(email: str):
-    """Remove a user from the blacklist."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM blacklisted_users WHERE email = ?", (email,))
-    conn.commit()
-    conn.close()
-
-def is_blacklisted(email: str) -> bool:
-    """Check if a user is blacklisted."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM blacklisted_users WHERE email = ?", (email,))
-    result = cursor.fetchone()
-    conn.close()
-    return result is not None
-
-def get_blacklisted_users() -> List[Dict[str, Any]]:
-    """Fetch all blacklisted users."""
+def get_all_user_access() -> List[Dict[str, Any]]:
+    """Fetch all user access records."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT email, reason, timestamp FROM blacklisted_users ORDER BY timestamp DESC")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def approve_user(email: str):
-    """Add a user to the approved list."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT OR IGNORE INTO approved_users (email, timestamp) VALUES (?, ?)",
-        (email, datetime.utcnow().isoformat())
-    )
-    conn.commit()
-    conn.close()
-
-def remove_approved_user(email: str):
-    """Remove a user from the approved list."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM approved_users WHERE email = ?", (email,))
-    conn.commit()
-    conn.close()
-
-def is_approved(email: str) -> bool:
-    """Check if a user is approved."""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM approved_users WHERE email = ?", (email,))
-    result = cursor.fetchone()
-    conn.close()
-    return result is not None
-
-def get_approved_users() -> List[Dict[str, Any]]:
-    """Fetch all approved users."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT email, timestamp FROM approved_users ORDER BY timestamp DESC")
+    cursor.execute("SELECT email, status, timestamp FROM user_access ORDER BY timestamp DESC")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
