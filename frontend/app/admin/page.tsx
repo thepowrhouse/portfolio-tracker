@@ -134,13 +134,14 @@ export default async function AdminDashboard() {
                     <th className="px-4 py-3 font-medium rounded-l-lg">Email</th>
                     <th className="px-4 py-3 font-medium">Broker</th>
                     <th className="px-4 py-3 font-medium">Parsed</th>
-                    <th className="px-4 py-3 font-medium rounded-r-lg text-right">Timestamp</th>
+                    <th className="px-4 py-3 font-medium text-right">Timestamp</th>
+                    <th className="px-4 py-3 font-medium rounded-r-lg text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recent_uploads.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No recent uploads</td>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No recent uploads</td>
                     </tr>
                   ) : (
                     recent_uploads.map((upload: any) => (
@@ -150,6 +151,19 @@ export default async function AdminDashboard() {
                         <td className="px-4 py-3 text-emerald-400 font-medium tabular-nums">+{upload.records_parsed}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-slate-400">
                           {new Date(upload.timestamp).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {upload.file_path ? (
+                            <a 
+                              href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/admin/download/${upload.id}?token=${token}`}
+                              className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1.5 rounded-md border border-indigo-500/20"
+                              download
+                            >
+                              Download CSV
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-600">N/A</span>
+                          )}
                         </td>
                       </tr>
                     ))

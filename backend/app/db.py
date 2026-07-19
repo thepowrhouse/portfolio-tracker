@@ -26,9 +26,16 @@ def init_db():
             email TEXT NOT NULL,
             broker TEXT NOT NULL,
             records_parsed INTEGER NOT NULL,
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL,
+            file_path TEXT
         )
     """)
+    
+    # Try adding file_path to existing table (ignores error if it already exists)
+    try:
+        cursor.execute("ALTER TABLE user_uploads ADD COLUMN file_path TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     conn.commit()
     conn.close()
@@ -44,13 +51,13 @@ def log_login(email: str):
     conn.commit()
     conn.close()
 
-def log_upload(email: str, broker: str, records_parsed: int):
+def log_upload(email: str, broker: str, records_parsed: int, file_path: str = None):
     """Log a CSV upload event."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO user_uploads (email, broker, records_parsed, timestamp) VALUES (?, ?, ?, ?)",
-        (email, broker, records_parsed, datetime.utcnow().isoformat())
+        "INSERT INTO user_uploads (email, broker, records_parsed, timestamp, file_path) VALUES (?, ?, ?, ?, ?)",
+        (email, broker, records_parsed, datetime.utcnow().isoformat(), file_path)
     )
     conn.commit()
     conn.close()
@@ -74,7 +81,7 @@ def get_recent_uploads(limit: int = 50) -> List[Dict[str, Any]]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, email, broker, records_parsed, timestamp FROM user_uploads ORDER BY timestamp DESC LIMIT ?",
+        "SELECT id, email, broker, records_parsed, timestamp, file_path FROM user_uploads ORDER BY timestamp DESC LIMIT ?",
         (limit,)
     )
     rows = cursor.fetchall()

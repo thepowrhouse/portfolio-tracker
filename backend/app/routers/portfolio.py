@@ -10,7 +10,11 @@ from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
 from app.db import log_upload
 import httpx
+import os
 from datetime import datetime
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
@@ -155,9 +159,13 @@ async def sync_portfolio(
     # Enrich with prices
     enriched = enrich_holdings(user_portfolio)
     
-    # Log the upload activity
+    # Log the upload activity and save file
     if email and email != "anonymous":
-        log_upload(email, broker.value, len(csv_holdings))
+        filename = f"{int(datetime.utcnow().timestamp())}_{broker.value}_{email}.csv"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        log_upload(email, broker.value, len(csv_holdings), file_path)
         
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
