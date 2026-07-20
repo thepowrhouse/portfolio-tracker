@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     if (password === adminPassword) {
       cookies().set("admin_token", adminPassword, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: request.headers.get("x-forwarded-proto") === "https" || request.url.startsWith("https://"),
+        sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24, // 1 day
       });
