@@ -1,24 +1,19 @@
 """
 Sentiment Analysis Engine.
-Uses yfinance to fetch recent news and vaderSentiment to grade the sentiment.
+Uses yfinance to fetch recent news and FinBERT to grade the sentiment.
 """
 
 import yfinance as yf
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from transformers import pipeline
 from app.models import SentimentAnalysis, SentimentGrade
 
-def get_vader_grade(compound_score: float) -> str:
-    """Map VADER compound score to a sentiment grade string."""
-    if compound_score >= 0.05:
-        return "Bullish"
-    elif compound_score <= -0.05:
-        return "Bearish"
-    else:
-        return "Neutral"
+# Initialize the pipeline globally so it stays in memory across requests
+# This is fast because the model weights were pre-downloaded in the Dockerfile
+finbert_pipeline = pipeline("sentiment-analysis", model="ProsusAI/finbert")
 
 def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> SentimentAnalysis:
     """
-    Fetch and analyze sentiment for a given ticker using yfinance news and VADER.
+    Fetch and analyze sentiment for a given ticker using yfinance news and FinBERT.
     """
     yf_ticker = ticker
     if asset_class == "indian_equity" or asset_class == "AssetClass.INDIAN_EQUITY":
@@ -33,8 +28,6 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
         print(f"Failed to fetch news for {ticker}: {e}")
         news_items = []
 
-    analyzer = SentimentIntensityAnalyzer()
-    
     headlines = []
     grades = []
     
@@ -48,12 +41,8 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
                     title = item.get("title", "")
                     
             if title:
-                score = analyzer.polarity_scores(title)
-                grade = get_vader_grade(score['compound'])
-                
                 headlines.append(title)
-                grades.append(grade)
-            
+                
     if not headlines:
         return SentimentAnalysis(
             ticker=ticker,
@@ -64,9 +53,30 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
             recent_headlines=[]
         )
         
-    bullish = grades.count("Bullish")
-    bearish = grades.count("Bearish")
-    
+    try:
+        # Run FinBERT on all headlines
+        results = finbert_pipeline(headlines)
+        
+        bullish = 0
+        bearish = 0
+        
+        for result in results:
+            label = result['label']
+            if label == "positive":
+                grades.append("Bullish")
+                bullish += 1
+            elif label == "negative":
+                grades.append("Bearish")
+                bearish += 1
+            else:
+                grades.append("Neutral")
+                
+    except Exception as e:
+        print(f"FinBERT analysis failed: {e}")
+        # Fallback to neutral if pipeline fails
+        bullish = 0
+        bearish = 0
+
     if bullish > bearish:
         overall = SentimentGrade.BULLISH
     elif bearish > bullish:
@@ -82,3 +92,4 @@ def analyze_sentiment(ticker: str, asset_class: str = "indian_equity") -> Sentim
         headline_count=len(headlines),
         recent_headlines=headlines[:5]
     )
+
