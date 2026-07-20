@@ -4,14 +4,6 @@ const nextConfig = {
   images: {
     domains: [],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/backend/:path*',
-        destination: 'http://backend:8000/:path*', // Proxy to Python backend
-      },
-    ];
-  },
   output: 'standalone',
 };
 
