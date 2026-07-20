@@ -711,8 +711,9 @@ def _parse_angelone_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHo
 def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
     """
     Parse RSU CSV (e.g. from Morgan Stanley / Shareworks / Custom schema).
-    Schema typically has: Investment (walmart-inc), Total Units, Invested Amount, etc.
+    Schema typically has: Investment (walmart-inc), Total Units, Investment Date, etc.
     """
+    import yfinance as yf
     try:
         df = pd.read_csv(io.BytesIO(file_bytes))
     except Exception as e:
@@ -722,71 +723,132 @@ def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
     
     inv_col = actual_cols.get("investment") or actual_cols.get("stock") or actual_cols.get("company")
     qty_col = actual_cols.get("total units") or actual_cols.get("quantity") or actual_cols.get("units")
-    avg_col = actual_cols.get("average cost") or actual_cols.get("avg cost")
-    invested_amt_col = actual_cols.get("invested amount")
+    date_col = actual_cols.get("investment date") or actual_cols.get("investment_date") or actual_cols.get("date")
     
     if not inv_col or not qty_col:
         raise CSVParseError(f"Could not find required columns (Investment, Total Units) in RSU CSV. Found columns: {list(df.columns)}")
     
-    # We want to aggregate units by company so we don't have 20 rows of WMT
-    agg_map = defaultdict(float)
+    class RSUAgg:
+        def __init__(self, name):
+            self.name = name
+            self.qty = 0.0
+            self.invested = 0.0
+            self.cashflows = []
+            
+    # First, collect all rows and identify unique tickers
+    raw_rows = []
+    unique_tickers_map = {}
     
     for _, row in df.iterrows():
         try:
             investment_name = str(row[inv_col]).strip().lower()
             qty = clean_number(row[qty_col])
-            
             if qty <= 0:
                 continue
                 
-            agg_map[investment_name] += qty
+            date_val = str(row[date_col]).strip() if date_col and pd.notna(row[date_col]) else None
+            
+            # Map ticker
+            ticker = "UNKNOWN"
+            company_name = investment_name.upper()
+            if "walmart" in investment_name:
+                ticker = "WMT"
+                company_name = "Walmart Inc."
+            elif "amazon" in investment_name:
+                ticker = "AMZN"
+                company_name = "Amazon.com, Inc."
+            elif "google" in investment_name or "alphabet" in investment_name:
+                ticker = "GOOGL"
+                company_name = "Alphabet Inc."
+            elif "microsoft" in investment_name:
+                ticker = "MSFT"
+                company_name = "Microsoft Corporation"
+            elif "apple" in investment_name:
+                ticker = "AAPL"
+                company_name = "Apple Inc."
+            elif "meta" in investment_name or "facebook" in investment_name:
+                ticker = "META"
+                company_name = "Meta Platforms, Inc."
+            else:
+                t, n = resolve_ticker(investment_name)
+                if t:
+                    ticker = t
+                    if n: company_name = n
+                    
+            unique_tickers_map[investment_name] = (ticker, company_name)
+            
+            dt = None
+            if date_val and date_val != "-":
+                try:
+                    # try DD/MM/YYYY
+                    dt = datetime.strptime(date_val, "%d/%m/%Y")
+                except ValueError:
+                    try:
+                        dt = pd.to_datetime(date_val).to_pydatetime()
+                    except Exception:
+                        pass
+            
+            raw_rows.append((investment_name, qty, dt))
         except (ValueError, TypeError):
             continue
             
+    # Fetch historical data for all unique tickers
+    hist_data = {}
+    for inv_name, (ticker, _) in unique_tickers_map.items():
+        if ticker != "UNKNOWN":
+            try:
+                hist = yf.download(ticker, period="5y", interval="1d", progress=False)["Close"]
+                if hasattr(hist, "columns"):
+                    hist = hist[ticker] if ticker in hist.columns else hist.iloc[:, 0]
+                hist_data[ticker] = hist
+            except Exception:
+                pass
+                
+    agg_map = {}
+    
+    for inv_name, qty, dt in raw_rows:
+        ticker, company_name = unique_tickers_map[inv_name]
+        
+        if ticker not in agg_map:
+            agg_map[ticker] = RSUAgg(company_name)
+            
+        agg = agg_map[ticker]
+        hist_price = 0.0
+        
+        if dt and ticker in hist_data:
+            hist = hist_data[ticker]
+            if not hist.empty:
+                dt_pd = pd.to_datetime(dt)
+                if dt_pd > pd.to_datetime(datetime.now()):
+                    hist_price = float(hist.iloc[-1])
+                else:
+                    if dt_pd in hist.index:
+                        hist_price = float(hist[dt_pd])
+                    else:
+                        # find closest previous date
+                        idx = hist.index.get_indexer([dt_pd], method='pad')[0]
+                        if idx != -1:
+                            hist_price = float(hist.iloc[idx])
+                            
+        val = qty * hist_price
+        agg.qty += qty
+        agg.invested += val
+        if dt and val > 0:
+            agg.cashflows.append(CashFlow(date=dt, amount=-val))
+            
     holdings = []
     
-    for inv_name, total_qty in agg_map.items():
-        # Custom mapping for popular RSU names
-        ticker = "UNKNOWN"
-        company_name = inv_name.upper()
-        
-        if "walmart" in inv_name:
-            ticker = "WMT"
-            company_name = "Walmart Inc."
-        elif "amazon" in inv_name:
-            ticker = "AMZN"
-            company_name = "Amazon.com, Inc."
-        elif "google" in inv_name or "alphabet" in inv_name:
-            ticker = "GOOGL"
-            company_name = "Alphabet Inc."
-        elif "microsoft" in inv_name:
-            ticker = "MSFT"
-            company_name = "Microsoft Corporation"
-        elif "apple" in inv_name:
-            ticker = "AAPL"
-            company_name = "Apple Inc."
-        elif "meta" in inv_name or "facebook" in inv_name:
-            ticker = "META"
-            company_name = "Meta Platforms, Inc."
-        else:
-            # Fallback to general resolve_ticker if we don't have a manual mapping
-            t, n = resolve_ticker(inv_name)
-            if t:
-                ticker = t
-                if n:
-                    company_name = n
-
-        # RSUs are usually granted, so cost basis can be 0 or derived from vesting. 
-        # The prompt states: "The current day rupee value can be computed using the number of units multiplied by the current value and convert it from dollar to rupee."
-        # This implies it should be treated as US_EQUITY and evaluated live.
-        
+    for ticker, agg in agg_map.items():
+        avg_price = agg.invested / agg.qty if agg.qty > 0 else 0.0
         holdings.append(CSVHolding(
             ticker=ticker,
-            company_name=company_name,
-            quantity=total_qty,
-            avg_price=0.0,
+            company_name=agg.name,
+            quantity=agg.qty,
+            avg_price=avg_price,
             broker=BrokerType.RSU,
-            asset_class=AssetClass.US_EQUITY
+            asset_class=AssetClass.US_EQUITY,
+            cashflows=agg.cashflows,
+            is_order_history=len(agg.cashflows) > 0
         ))
         
     return holdings
