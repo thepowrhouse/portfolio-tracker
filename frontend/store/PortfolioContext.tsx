@@ -1,12 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { PortfolioState, StockRecommendation, PortfolioHolding } from "@/types";
+import { PortfolioState, StockRecommendation, PortfolioHolding, CalendarEvent } from "@/types";
 import { api } from "@/lib/api";
 
 interface PortfolioContextType {
   portfolio: PortfolioState | null;
   recommendations: StockRecommendation[];
+  calendarEvents: CalendarEvent[];
   lastUpdated: number;
   isLoading: boolean;
   isAnalyzing: boolean;
@@ -17,6 +18,7 @@ interface PortfolioContextType {
   addManualHolding: (holding: any) => Promise<void>;
   deleteHolding: (id: string) => Promise<void>;
   resetPortfolio: () => Promise<void>;
+  refreshCalendar: () => Promise<void>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -24,6 +26,7 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [portfolio, setPortfolioState] = useState<PortfolioState | null>(null);
   const [recommendations, setRecommendations] = useState<StockRecommendation[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -56,13 +59,24 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [portfolio]);
 
+  const refreshCalendar = useCallback(async () => {
+    if (!portfolio || portfolio.holdings.length === 0) return;
+    try {
+      const events = await api.get<CalendarEvent[]>("/calendar/events");
+      setCalendarEvents(events);
+    } catch (err) {
+      console.error("Failed to fetch calendar events:", err);
+    }
+  }, [portfolio]);
+
   useEffect(() => {
     refreshPortfolio();
   }, [refreshPortfolio]);
 
   useEffect(() => {
     refreshRecommendations();
-  }, [lastUpdated, refreshRecommendations]);
+    refreshCalendar();
+  }, [lastUpdated, refreshRecommendations, refreshCalendar]);
 
   // CRITICAL FIX: syncCSV now properly updates state with returned holdings
   const syncCSV = useCallback(async (file: File, broker: string) => {
@@ -138,6 +152,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       value={{
         portfolio,
         recommendations,
+        calendarEvents,
         lastUpdated,
         isLoading,
         isAnalyzing,
@@ -148,6 +163,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         addManualHolding,
         deleteHolding,
         resetPortfolio,
+        refreshCalendar,
       }}
     >
       {children}

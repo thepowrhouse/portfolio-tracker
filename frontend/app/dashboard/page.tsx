@@ -5,6 +5,7 @@ import { AssetAllocation } from "@/components/dashboard/AssetAllocation";
 import { CSVUploader } from "@/components/dashboard/CSVUploader";
 import { HoldingsTable } from "@/components/holdings/HoldingsTable";
 import { SectorPerformanceTable } from "@/components/sectors/SectorPerformanceTable";
+import { EventCalendar } from "@/components/dashboard/EventCalendar";
 import { usePortfolio } from "@/store/PortfolioContext";
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -14,7 +15,7 @@ import { Suspense } from "react";
 function DashboardContent() {
   const { data: session, status } = useSession();
   const { portfolio, lastUpdated, refreshPortfolio } = usePortfolio();
-  const [activeView, setActiveView] = useState<"Holdings" | "Sectors">("Holdings");
+  const [activeView, setActiveView] = useState<"Holdings" | "Sectors" | "Calendar">("Holdings");
   const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
@@ -177,6 +178,14 @@ function DashboardContent() {
               >
                 Sector Performance
               </button>
+              <button
+                onClick={() => setActiveView("Calendar")}
+                className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
+                  activeView === "Calendar" ? "text-blue-400 border-b-2 border-blue-400 pb-2 -mb-[9px]" : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                Calendar
+              </button>
             </div>
             
             {activeView === "Holdings" && portfolio?.holdings && portfolio.holdings.length > 0 && (
@@ -188,8 +197,10 @@ function DashboardContent() {
           
           {activeView === "Holdings" ? (
             <HoldingsTable activeHorizon={activeHorizon} setActiveHorizon={setActiveHorizon} />
-          ) : (
+          ) : activeView === "Sectors" ? (
             <SectorPerformanceTable />
+          ) : (
+            <EventCalendar />
           )}
         </div>
       </main>

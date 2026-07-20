@@ -25,6 +25,18 @@ class SentimentGrade(str, Enum):
     NEUTRAL = "Neutral"
     BEARISH = "Bearish"
 
+class EventType(str, Enum):
+    EARNINGS = "earnings"
+    MACRO = "macro"
+
+class CalendarEvent(BaseModel):
+    id: str
+    type: EventType
+    date: datetime
+    title: str
+    description: Optional[str] = None
+    severity: Optional[str] = None # "high", "medium", "low"
+
 # ==================== CSV / Portfolio Models ====================
 
 class CashFlow(BaseModel):

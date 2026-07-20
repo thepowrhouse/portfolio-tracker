@@ -113,3 +113,14 @@ export interface StockRecommendation {
   quant?: QuantMetrics | null;
   horizons: { [key: string]: HorizonVerdict };
 }
+
+export type EventType = "earnings" | "macro";
+
+export interface CalendarEvent {
+  id: string;
+  type: EventType;
+  date: string;
+  title: string;
+  description?: string | null;
+  severity?: "high" | "medium" | "low" | null;
+}
