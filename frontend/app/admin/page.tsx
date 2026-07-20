@@ -35,6 +35,7 @@ async function getAdminData(token: string) {
 
 export default async function AdminDashboard() {
   const token = cookies().get("admin_token")?.value;
+  console.log("Admin page accessed. Token present:", !!token);
   if (!token) {
     redirect("/admin/login");
   }

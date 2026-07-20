@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     const adminPassword = process.env.ADMIN_PASSWORD || "secret123";
 
     if (password === adminPassword) {
+      console.log("Login successful, setting admin_token cookie...");
       cookies().set("admin_token", adminPassword, {
         httpOnly: true,
         secure: request.headers.get("x-forwarded-proto") === "https" || request.url.startsWith("https://"),
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({ success: true });
     }
+    
+    console.log("Login failed: password mismatch");
 
     return NextResponse.json({ success: false, message: "Invalid password" }, { status: 401 });
   } catch (error) {
