@@ -723,7 +723,9 @@ def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
     
     inv_col = actual_cols.get("investment") or actual_cols.get("stock") or actual_cols.get("company")
     qty_col = actual_cols.get("total units") or actual_cols.get("quantity") or actual_cols.get("units")
-    date_col = actual_cols.get("investment date") or actual_cols.get("investment_date") or actual_cols.get("date")
+    date_col_1 = actual_cols.get("investment_date")
+    date_col_2 = actual_cols.get("investment date")
+    date_col_3 = actual_cols.get("date")
     
     if not inv_col or not qty_col:
         raise CSVParseError(f"Could not find required columns (Investment, Total Units) in RSU CSV. Found columns: {list(df.columns)}")
@@ -746,7 +748,13 @@ def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
             if qty <= 0:
                 continue
                 
-            date_val = str(row[date_col]).strip() if date_col and pd.notna(row[date_col]) else None
+            date_val = None
+            for dc in [date_col_1, date_col_2, date_col_3]:
+                if dc and pd.notna(row[dc]):
+                    val = str(row[dc]).strip()
+                    if val and val != "-":
+                        date_val = val
+                        break
             
             # Map ticker
             ticker = "UNKNOWN"
