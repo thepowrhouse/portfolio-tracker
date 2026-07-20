@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePortfolio } from "@/store/PortfolioContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -14,9 +14,36 @@ interface AssetAllocationProps {
   activeHorizon?: "short" | "mid" | "long";
 }
 
+interface QuantMetrics {
+  portfolio_beta: number;
+  portfolio_alpha: number;
+  portfolio_sharpe: number;
+  portfolio_sortino: number;
+  holdings_analyzed: number;
+}
+
 export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps) {
   const { portfolio, recommendations } = usePortfolio();
-  const [view, setView] = useState<"broker" | "industry" | "performance" | "action">("broker");
+  const [view, setView] = useState<"broker" | "industry" | "performance" | "action" | "risk">("broker");
+  const [metrics, setMetrics] = useState<QuantMetrics | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuant = async () => {
+      try {
+        const res = await fetch("/api/backend/portfolio/quant");
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch quant metrics", err);
+      } finally {
+        setMetricsLoading(false);
+      }
+    };
+    fetchQuant();
+  }, []);
 
   const data = useMemo(() => {
     if (!portfolio) return [];
@@ -128,8 +155,13 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 h-full flex flex-col">
       <div className="mb-4 flex flex-col 2xl:flex-row items-start 2xl:items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 shrink-0">
-          Portfolio Breakdown
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-2">
+          Portfolio Analytics
+          {view === "risk" && (
+            <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
+              Quant AI
+            </span>
+          )}
         </h3>
         <div className="flex flex-wrap bg-slate-800/50 rounded-lg p-1 gap-1">
           <button
@@ -164,10 +196,71 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
           >
             Action
           </button>
+          <button
+            onClick={() => setView("risk")}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === "risk" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-300"
+            }`}
+          >
+            Risk
+          </button>
         </div>
       </div>
       
-      <div className="flex items-center gap-6 flex-1">
+      {view === "risk" ? (
+        <div className="flex-1 flex flex-col pt-2 min-h-[160px]">
+           {metricsLoading ? (
+              <div className="flex-1 animate-pulse space-y-4 pt-4">
+                 <div className="h-10 w-full rounded bg-slate-800/50" />
+                 <div className="h-10 w-full rounded bg-slate-800/50" />
+              </div>
+           ) : (!metrics || metrics.holdings_analyzed === 0) ? (
+              <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
+                Upload holdings to calculate risk metrics
+              </div>
+           ) : (
+              <div className="grid grid-cols-2 gap-4 h-full">
+                <div className="flex flex-col justify-center rounded-xl bg-slate-950/50 p-4 border border-slate-800/50">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Beta</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className={`text-2xl font-bold ${metrics.portfolio_beta > 1.2 ? 'text-amber-400' : 'text-slate-200'}`}>
+                      {metrics.portfolio_beta.toFixed(2)}
+                    </span>
+                  </div>
+                  <span className="mt-1 text-[10px] text-slate-500">Volatility vs index</span>
+                </div>
+                <div className="flex flex-col justify-center rounded-xl bg-slate-950/50 p-4 border border-slate-800/50">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Alpha</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className={`text-2xl font-bold ${metrics.portfolio_alpha > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {metrics.portfolio_alpha > 0 ? '+' : ''}{(metrics.portfolio_alpha * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                  <span className="mt-1 text-[10px] text-slate-500">Excess return</span>
+                </div>
+                <div className="flex flex-col justify-center rounded-xl bg-slate-950/50 p-4 border border-slate-800/50">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Sharpe</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className={`text-2xl font-bold ${metrics.portfolio_sharpe > 1 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {metrics.portfolio_sharpe.toFixed(2)}
+                    </span>
+                  </div>
+                  <span className="mt-1 text-[10px] text-slate-500">Risk-adjusted return</span>
+                </div>
+                <div className="flex flex-col justify-center rounded-xl bg-slate-950/50 p-4 border border-slate-800/50">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Sortino</span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className={`text-2xl font-bold ${metrics.portfolio_sortino > 1 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {metrics.portfolio_sortino.toFixed(2)}
+                    </span>
+                  </div>
+                  <span className="mt-1 text-[10px] text-slate-500">Downside protection</span>
+                </div>
+              </div>
+           )}
+        </div>
+      ) : (
+      <div className="flex items-center gap-6 flex-1 min-h-[160px]">
         <div className="h-40 w-40 flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -234,8 +327,11 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
               </div>
             </div>
           )}
+            </div>
+          )}
         </div>
       </div>
+      )}
     </div>
   );
 }
