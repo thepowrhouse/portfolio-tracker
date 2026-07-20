@@ -856,7 +856,7 @@ def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
             broker=BrokerType.RSU,
             asset_class=AssetClass.US_EQUITY,
             cashflows=agg.cashflows,
-            is_order_history=len(agg.cashflows) > 0
+            is_order_history=False
         ))
         
     return holdings
