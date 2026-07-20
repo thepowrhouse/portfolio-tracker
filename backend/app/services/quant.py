@@ -62,9 +62,9 @@ def get_quant_metrics(ticker: str, asset_class: str = "indian_equity") -> QuantM
         sharpe_ratio = (stock_annual_ret - risk_free_rate) / stock_annual_volatility if stock_annual_volatility != 0 else 0.0
         
         # 5. Calculate Sortino Ratio (Downside deviation only)
-        downside_returns = stock_ret[stock_ret < 0]
-        downside_volatility = downside_returns.std() * np.sqrt(TRADING_DAYS)
-        sortino_ratio = (stock_annual_ret - risk_free_rate) / downside_volatility if downside_volatility != 0 and len(downside_returns) > 0 else 0.0
+        downside_returns = np.where(stock_ret < 0, stock_ret, 0)
+        downside_volatility = pd.Series(downside_returns).std() * np.sqrt(TRADING_DAYS)
+        sortino_ratio = (stock_annual_ret - risk_free_rate) / downside_volatility if downside_volatility != 0 else 0.0
         
         return QuantMetrics(
             ticker=ticker,

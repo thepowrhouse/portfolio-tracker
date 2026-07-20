@@ -33,7 +33,7 @@ export function QuantCard() {
 
   if (loading) {
     return (
-      <div className="flex h-[280px] animate-pulse flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+      <div className="flex h-full animate-pulse flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
         <div className="h-6 w-32 rounded bg-slate-800/80 mb-8" />
         <div className="space-y-4">
           <div className="h-10 w-full rounded bg-slate-800/50" />
@@ -45,7 +45,7 @@ export function QuantCard() {
 
   if (!metrics || metrics.holdings_analyzed === 0) {
     return (
-      <div className="flex h-[280px] flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+      <div className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
         <h3 className="text-lg font-semibold text-white">Risk Metrics</h3>
         <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
           Upload holdings to calculate risk metrics
@@ -55,7 +55,7 @@ export function QuantCard() {
   }
 
   return (
-    <div className="flex h-[280px] flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur transition-all hover:border-slate-700">
+    <div className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur transition-all hover:border-slate-700">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white">Risk Metrics</h3>
         <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">
