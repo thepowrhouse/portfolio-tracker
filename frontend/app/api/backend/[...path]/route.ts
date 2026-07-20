@@ -37,6 +37,7 @@ async function handleProxy(req: NextRequest, { params }: { params: { path: strin
     const init: RequestInit = {
       method: req.method,
       headers,
+      cache: "no-store",
     };
     if (req.method !== "GET" && req.method !== "HEAD") {
       init.body = req.body;
