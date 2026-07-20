@@ -5,16 +5,21 @@ import { authOptions } from "@/lib/auth";
 const BACKEND_URL = process.env.API_URL || "http://backend:8000";
 
 async function handleProxy(req: NextRequest, { params }: { params: { path: string[] } }) {
-  // CRITICAL SECURITY: Verify session server-side
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const path = params.path.join("/");
   const url = `${BACKEND_URL.replace(/\/+$/, "")}/${path}${req.nextUrl.search}`;
-  
+
   const headers = new Headers();
+  let userEmail = "anonymous";
+
+  // CRITICAL SECURITY: Verify session server-side for non-admin routes
+  if (!path.startsWith("admin/")) {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userEmail = session.user.email;
+  }
+
   req.headers.forEach((value, key) => {
     // Strip user-injected email to prevent spoofing
     if (key.toLowerCase() !== "host" && key.toLowerCase() !== "connection" && key.toLowerCase() !== "x-user-email") {
@@ -22,8 +27,8 @@ async function handleProxy(req: NextRequest, { params }: { params: { path: strin
     }
   });
   
-  // Inject the cryptographically verified email from the session
-  headers.set("X-User-Email", session.user.email);
+  // Inject the cryptographically verified email (or anonymous for admin routes)
+  headers.set("X-User-Email", userEmail);
 
   try {
     const init: RequestInit = {

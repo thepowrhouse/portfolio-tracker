@@ -8,8 +8,7 @@ export default function AccessManager({ token, initialAccessList }: { token: str
 
   const handleUpdateStatus = async (email: string, status: string) => {
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      apiUrl = apiUrl.replace("localhost", "127.0.0.1");
+      const apiUrl = typeof window !== "undefined" ? "/api/backend" : (process.env.API_URL || "http://127.0.0.1:8000");
       const res = await fetch(`${apiUrl}/admin/access`, {
         method: "POST",
         headers: {
