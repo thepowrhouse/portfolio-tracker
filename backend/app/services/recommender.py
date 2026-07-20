@@ -241,13 +241,30 @@ def generate_recommendation(
             VerdictRationale(pillar="Risk & Quant", points=quant_points),
         ]
         
-        # Overall summary
+        # Dynamic verbose summary
+        bullish_pillars = []
+        bearish_pillars = []
+        if tech_score > 0: bullish_pillars.append("technical momentum")
+        elif tech_score < 0: bearish_pillars.append("technical weakness")
+        
+        if fund_score > 0: bullish_pillars.append("strong fundamentals")
+        elif fund_score < 0: bearish_pillars.append("poor fundamentals")
+        
+        if sent_score > 0: bullish_pillars.append("positive sentiment")
+        elif sent_score < 0: bearish_pillars.append("negative sentiment")
+        
+        if quant_score > 0: bullish_pillars.append("favorable risk-adjusted returns")
+        elif quant_score < 0: bearish_pillars.append("poor risk metrics")
+        
+        bullish_text = ", ".join(bullish_pillars) if bullish_pillars else "no major bullish drivers"
+        bearish_text = ", ".join(bearish_pillars) if bearish_pillars else "no major bearish drivers"
+        
         if recommendation == Recommendation.BUY:
-            summary = f"Confluence of positive signals supports a {horizon}-term BUY. {company_name} shows favorable dynamics across multiple pillars."
+            summary = f"A {horizon}-term BUY is supported by {bullish_text}. The algorithmic assessment for {company_name} is positive overall, though it is slightly offset by {bearish_text}."
         elif recommendation == Recommendation.SELL:
-            summary = f"Multiple red flags detected for the {horizon}-term. Consider reducing exposure to {company_name}."
+            summary = f"A {horizon}-term SELL is triggered primarily due to {bearish_text}. Despite showing {bullish_text}, {company_name} carries too much aggregate downside risk at this level."
         else:
-            summary = f"Mixed signals suggest maintaining current position for the {horizon}-term. Wait for clearer direction."
+            summary = f"A {horizon}-term HOLD is recommended for {company_name} due to conflicting signals. We observe {bullish_text}, which is heavily offset by {bearish_text}."
             
         # Determine trend for this horizon
         horizon_trend = "sideways"

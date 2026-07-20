@@ -260,7 +260,7 @@ export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
           </div>
           <p className="text-xs text-slate-400 leading-relaxed mb-3">{horizonVerdict.overall_summary}</p>
           
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
             {horizonVerdict.rationale.map((r) => (
               <div key={r.pillar} className="rounded bg-slate-950/50 p-3">
                 <h5 className="text-xs font-semibold text-slate-500 mb-1.5">{r.pillar}</h5>
