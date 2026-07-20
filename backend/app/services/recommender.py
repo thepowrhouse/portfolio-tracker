@@ -179,24 +179,24 @@ def score_quant(quant: QuantMetrics, horizon: str) -> tuple[float, List[str]]:
     
     if quant.alpha > 0:
         score += 0.3 * weight
-        points.append(f"Positive Alpha ({quant.alpha}%) indicates strong risk-adjusted outperformance")
+        points.append(f"Positive Alpha ({quant.alpha:.2f}%) indicates strong risk-adjusted outperformance")
     elif quant.alpha < -2:
         score -= 0.3 * weight
-        points.append(f"Negative Alpha ({quant.alpha}%) shows underperformance vs expected return")
+        points.append(f"Negative Alpha ({quant.alpha:.2f}%) shows underperformance vs expected return")
         
     if quant.sharpe_ratio > 1.5:
         score += 0.3 * weight
-        points.append(f"Excellent Sharpe Ratio ({quant.sharpe_ratio}) shows great return per unit of risk")
+        points.append(f"Excellent Sharpe Ratio ({quant.sharpe_ratio:.2f}) shows great return per unit of risk")
     elif quant.sharpe_ratio < 0:
         score -= 0.3 * weight
-        points.append(f"Negative Sharpe Ratio ({quant.sharpe_ratio}) indicates returns did not compensate for volatility")
+        points.append(f"Negative Sharpe Ratio ({quant.sharpe_ratio:.2f}) indicates returns did not compensate for volatility")
         
     if quant.sortino_ratio > 2.0:
         score += 0.2 * weight
-        points.append(f"High Sortino Ratio ({quant.sortino_ratio}) shows strong downside protection")
+        points.append(f"High Sortino Ratio ({quant.sortino_ratio:.2f}) shows strong downside protection")
     elif quant.sortino_ratio < 0:
         score -= 0.2 * weight
-        points.append(f"Negative Sortino Ratio ({quant.sortino_ratio}) flags significant downside volatility")
+        points.append(f"Negative Sortino Ratio ({quant.sortino_ratio:.2f}) flags significant downside volatility")
         
     return score, points
 
