@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "activity.db")
+DB_PATH = os.environ.get("SQLITE_DB_PATH", os.path.join(os.path.dirname(__file__), "activity.db"))
 
 def init_db():
     """Initializes the SQLite database with required tables."""
