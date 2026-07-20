@@ -237,8 +237,8 @@ def generate_recommendation(
         rationale = [
             VerdictRationale(pillar="Technical", points=tech_points),
             VerdictRationale(pillar="Fundamental", points=fund_points),
-            VerdictRationale(pillar="Sentiment", points=sent_points),
             VerdictRationale(pillar="Risk & Quant", points=quant_points),
+            VerdictRationale(pillar="Sentiment", points=sent_points),
         ]
         
         # Dynamic verbose summary
