@@ -93,11 +93,23 @@ export interface HorizonVerdict {
   overall_summary: string;
 }
 
+export interface QuantMetrics {
+  ticker: string;
+  beta: number;
+  alpha: number;
+  sharpe_ratio: number;
+  sortino_ratio: number;
+  annualized_return: number;
+  annualized_volatility: number;
+  benchmark_ticker: string;
+}
+
 export interface StockRecommendation {
   ticker: string;
   company_name: string;
   technical: TechnicalIndicators;
   fundamental: FundamentalMetrics;
   sentiment: SentimentAnalysis;
+  quant?: QuantMetrics | null;
   horizons: { [key: string]: HorizonVerdict };
 }
