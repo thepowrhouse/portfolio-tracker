@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth";
 
 const BACKEND_URL = process.env.API_URL || "http://backend:8000";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function handleProxy(req: NextRequest, { params }: { params: { path: string[] } }) {
   const path = params.path.join("/");
   const url = `${BACKEND_URL.replace(/\/+$/, "")}/${path}${req.nextUrl.search}`;

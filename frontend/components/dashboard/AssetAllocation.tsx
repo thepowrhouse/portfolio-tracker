@@ -215,8 +215,9 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
                  <div className="h-10 w-full rounded bg-slate-800/50" />
               </div>
            ) : (!metrics || metrics.holdings_analyzed === 0) ? (
-              <div className="flex flex-1 items-center justify-center text-sm text-slate-500">
-                Upload holdings to calculate risk metrics
+              <div className="flex flex-col flex-1 items-center justify-center text-sm text-slate-500 overflow-hidden p-2">
+                <div>Upload holdings to calculate risk metrics</div>
+                <div className="text-xs mt-2 text-slate-600 break-all">{JSON.stringify(metrics)}</div>
               </div>
            ) : (
               <div className="grid grid-cols-2 gap-4 h-full">
