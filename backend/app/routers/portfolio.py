@@ -41,12 +41,14 @@ def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
     return x_user_email
 
 def verify_access(email: str = Depends(get_user_email)) -> str:
-    if email != "anonymous":
-        status = get_user_status(email)
-        if status == "blacklisted":
-            raise HTTPException(status_code=403, detail="Account is blacklisted")
-        if status != "approved":
-            raise HTTPException(status_code=403, detail="Account is not approved")
+    if not email or email == "anonymous":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    status = get_user_status(email)
+    if status == "blacklisted":
+        raise HTTPException(status_code=403, detail="Account is blacklisted")
+    if status != "approved":
+        raise HTTPException(status_code=403, detail="Account is not approved")
     return email
 
 def get_session_id(x_session_id: str = Header(default=None)) -> str:

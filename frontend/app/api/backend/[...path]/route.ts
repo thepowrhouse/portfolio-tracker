@@ -1,17 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const BACKEND_URL = process.env.API_URL || "http://backend:8000";
 
 async function handleProxy(req: NextRequest, { params }: { params: { path: string[] } }) {
+  // CRITICAL SECURITY: Verify session server-side
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const path = params.path.join("/");
   const url = `${BACKEND_URL.replace(/\/+$/, "")}/${path}${req.nextUrl.search}`;
   
   const headers = new Headers();
   req.headers.forEach((value, key) => {
-    if (key.toLowerCase() !== "host" && key.toLowerCase() !== "connection") {
+    // Strip user-injected email to prevent spoofing
+    if (key.toLowerCase() !== "host" && key.toLowerCase() !== "connection" && key.toLowerCase() !== "x-user-email") {
       headers.set(key, value);
     }
   });
+  
+  // Inject the cryptographically verified email from the session
+  headers.set("X-User-Email", session.user.email);
 
   try {
     const init: RequestInit = {

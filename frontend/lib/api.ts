@@ -13,9 +13,7 @@ export class APIError extends Error {
 async function getHeaders(customHeaders: Record<string, string> = {}) {
   const session = await getSession();
   const headers: Record<string, string> = { ...customHeaders };
-  if (session?.user?.email) {
-    headers["X-User-Email"] = session.user.email;
-  }
+  // X-User-Email is now injected securely by the Next.js API Proxy!
   if (typeof window !== "undefined") {
     if (!sessionStorage.getItem("sessionId")) {
       sessionStorage.setItem("sessionId", Math.random().toString(36).substring(2, 10));

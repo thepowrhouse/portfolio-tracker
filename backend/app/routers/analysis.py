@@ -8,7 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
-from app.routers.portfolio import _portfolio_db, get_user_email
+from app.routers.portfolio import _portfolio_db, verify_access
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -26,7 +26,7 @@ def analyze_single_holding(holding):
     )
 
 @router.get("/batch", response_model=List[StockRecommendation])
-async def get_batch_analysis(email: str = Depends(get_user_email)):
+async def get_batch_analysis(email: str = Depends(verify_access)):
     """
     Fetch analysis for ALL holdings in portfolio.
     Called after CSV sync to refresh all recommendations.
@@ -46,7 +46,7 @@ async def get_batch_analysis(email: str = Depends(get_user_email)):
     return results
 
 @router.get("/{ticker}", response_model=StockRecommendation)
-async def get_stock_analysis(ticker: str, email: str = Depends(get_user_email)):
+async def get_stock_analysis(ticker: str, email: str = Depends(verify_access)):
     """
     Fetch complete analysis for a single stock.
     Called by frontend when expanding a stock row.
