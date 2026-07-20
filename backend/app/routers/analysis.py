@@ -24,7 +24,8 @@ def analyze_single_holding(holding):
         company_name=holding.company_name,
         technical=technical,
         fundamental=fundamental,
-        sentiment=sentiment
+        sentiment=sentiment,
+        quant=quant
     )
     recommendation.quant = quant
     return recommendation
@@ -75,7 +76,8 @@ async def get_stock_analysis(ticker: str, email: str = Depends(verify_access)):
         company_name=company_name,
         technical=technical,
         fundamental=fundamental,
-        sentiment=sentiment
+        sentiment=sentiment,
+        quant=quant
     )
     recommendation.quant = quant
     return recommendation

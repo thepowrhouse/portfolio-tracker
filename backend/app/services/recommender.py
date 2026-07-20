@@ -5,7 +5,7 @@ Combines Technical, Fundamental, and Sentiment into a BUY/HOLD/SELL verdict.
 
 from typing import List
 from app.models import (
-    TechnicalIndicators, FundamentalMetrics, SentimentAnalysis,
+    TechnicalIndicators, FundamentalMetrics, SentimentAnalysis, QuantMetrics,
     Recommendation, StockRecommendation, VerdictRationale, HorizonVerdict
 )
 
@@ -169,12 +169,44 @@ def score_sentiment(sent: SentimentAnalysis, horizon: str) -> tuple[float, List[
     
     return score, points
 
+def score_quant(quant: QuantMetrics, horizon: str) -> tuple[float, List[str]]:
+    """Returns (score -1 to 1, rationale points) based on Risk & Quant metrics"""
+    points = []
+    score = 0.0
+    
+    # Quant matters similarly across horizons, slightly more for long term
+    weight = 0.5 if horizon == "short" else 1.0 if horizon == "mid" else 1.2
+    
+    if quant.alpha > 0:
+        score += 0.3 * weight
+        points.append(f"Positive Alpha ({quant.alpha}%) indicates strong risk-adjusted outperformance")
+    elif quant.alpha < -2:
+        score -= 0.3 * weight
+        points.append(f"Negative Alpha ({quant.alpha}%) shows underperformance vs expected return")
+        
+    if quant.sharpe_ratio > 1.5:
+        score += 0.3 * weight
+        points.append(f"Excellent Sharpe Ratio ({quant.sharpe_ratio}) shows great return per unit of risk")
+    elif quant.sharpe_ratio < 0:
+        score -= 0.3 * weight
+        points.append(f"Negative Sharpe Ratio ({quant.sharpe_ratio}) indicates returns did not compensate for volatility")
+        
+    if quant.sortino_ratio > 2.0:
+        score += 0.2 * weight
+        points.append(f"High Sortino Ratio ({quant.sortino_ratio}) shows strong downside protection")
+    elif quant.sortino_ratio < 0:
+        score -= 0.2 * weight
+        points.append(f"Negative Sortino Ratio ({quant.sortino_ratio}) flags significant downside volatility")
+        
+    return score, points
+
 def generate_recommendation(
     ticker: str,
     company_name: str,
     technical: TechnicalIndicators,
     fundamental: FundamentalMetrics,
-    sentiment: SentimentAnalysis
+    sentiment: SentimentAnalysis,
+    quant: QuantMetrics
 ) -> StockRecommendation:
     """
     Master recommender generating short, mid, and long term horizons.
@@ -185,9 +217,10 @@ def generate_recommendation(
         tech_score, tech_points = score_technical(technical, horizon)
         fund_score, fund_points = score_fundamental(fundamental, horizon)
         sent_score, sent_points = score_sentiment(sentiment, horizon)
+        quant_score, quant_points = score_quant(quant, horizon)
         
         # Normalize total score for the horizon
-        total_score = tech_score + fund_score + sent_score
+        total_score = tech_score + fund_score + sent_score + quant_score
         
         # Map to recommendation
         if total_score >= 0.5:
@@ -205,6 +238,7 @@ def generate_recommendation(
             VerdictRationale(pillar="Technical", points=tech_points),
             VerdictRationale(pillar="Fundamental", points=fund_points),
             VerdictRationale(pillar="Sentiment", points=sent_points),
+            VerdictRationale(pillar="Risk & Quant", points=quant_points),
         ]
         
         # Overall summary
