@@ -60,25 +60,57 @@ def get_session_id(x_session_id: str = Header(default=None)) -> str:
 
 def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     """Fetch current prices and compute P&L in parallel."""
-    import concurrent.futures
+    if not holdings:
+        return []
 
-    def enrich_single(h: PortfolioHolding):
+    import yfinance as yf
+    import pandas as pd
+    
+    # 1. Collect unique tickers to fetch in bulk
+    tickers_to_fetch = set()
+    for h in holdings:
+        yf_ticker = h.ticker
+        if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
+        tickers_to_fetch.add(yf_ticker)
+        
+    tickers_list = list(tickers_to_fetch)
+    price_map = {}
+    
+    if tickers_list:
         try:
-            import yfinance as yf
+            # yf.download handles rate limits much better for bulk fetching
+            hist = yf.download(tickers_list, period="1d", progress=False)["Close"]
+            if len(tickers_list) == 1:
+                if not hist.empty:
+                    price_map[tickers_list[0]] = float(hist.iloc[-1])
+            else:
+                if not hist.empty:
+                    last_row = hist.iloc[-1]
+                    for t in tickers_list:
+                        if t in last_row and not pd.isna(last_row[t]):
+                            price_map[t] = float(last_row[t])
+        except Exception as e:
+            print(f"Batch fetch error: {e}")
+
+    # 2. Assign prices and calculate metrics
+    for h in holdings:
+        try:
             yf_ticker = h.ticker
             if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
                 yf_ticker += ".NS"
-            stock = yf.Ticker(yf_ticker)
-            info = stock.info
-            price = info.get("currentPrice") or info.get("regularMarketPrice") or h.avg_price
             
-            # Update company name if unknown (defaults to ticker)
-            if h.company_name == h.ticker:
-                fetched_name = info.get("longName") or info.get("shortName")
-                if fetched_name:
-                    h.company_name = fetched_name
-                    
-            current_price = price
+            # Fetch from map, or fallback to avg_price if yfinance fails
+            current_price = price_map.get(yf_ticker)
+            
+            if not current_price:
+                # Rare fallback: maybe the stock was delisted or yfinance batch failed
+                try:
+                    stock = yf.Ticker(yf_ticker)
+                    info = stock.info
+                    current_price = info.get("currentPrice") or info.get("regularMarketPrice") or h.avg_price
+                except Exception:
+                    current_price = h.avg_price
             
             h.current_price = round(current_price, 2)
             h.pnl_absolute = round((current_price - h.avg_price) * h.quantity, 2)
@@ -104,11 +136,7 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             h.current_price = h.avg_price
             h.pnl_absolute = 0
             h.pnl_percent = 0
-        return h
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        list(executor.map(enrich_single, holdings))
-        
+            
     return holdings
 
 @router.get("/state", response_model=PortfolioState)
