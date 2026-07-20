@@ -105,8 +105,26 @@ export function HoldingsTable({
     })}`;
   };
 
+  const availableBrokers = React.useMemo(() => {
+    const brokers = new Set<string>();
+    localHoldings.forEach(h => {
+      if (h.broker) brokers.add(h.broker);
+    });
+    
+    const formatBroker = (s: string) => {
+      const lower = s.toLowerCase();
+      if (lower === "rsu") return "RSU";
+      if (lower === "indmoney") return "INDmoney";
+      if (lower === "angelone") return "AngelOne";
+      return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    };
+    
+    const sorted = Array.from(brokers).map(formatBroker).sort();
+    return ["All", ...sorted];
+  }, [localHoldings]);
+
   const filteredHoldings = localHoldings.filter(
-    (h) => activeTab === "All" || h.broker === activeTab.toLowerCase()
+    (h) => activeTab === "All" || h.broker.toLowerCase() === activeTab.toLowerCase()
   );
 
   const aggregatedHoldings = React.useMemo(() => aggregateHoldings(filteredHoldings), [filteredHoldings]);
@@ -205,8 +223,8 @@ export function HoldingsTable({
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
       <div className="border-b border-slate-800 px-4 py-3 flex justify-between items-center flex-wrap gap-4">
-        <div className="flex gap-2">
-          {["All", "Zerodha", "Groww", "INDmoney", "AngelOne"].map((tab) => (
+        <div className="flex gap-2 flex-wrap">
+          {availableBrokers.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
