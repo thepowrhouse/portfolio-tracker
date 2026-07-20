@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
-  const { technical, fundamental, sentiment } = recommendation;
+  const { technical, fundamental, sentiment, quant } = recommendation;
   const horizonVerdict = recommendation.horizons?.[activeHorizon];
 
   const MetricRow = ({ label, value, suffix = "" }: { label: string; value: string | number | null; suffix?: string }) => (
@@ -60,7 +60,7 @@ export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         {/* Technical Column */}
         <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
           <div className="mb-3 flex items-center gap-2">
@@ -117,6 +117,23 @@ export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
           <MetricRow label="Intrinsic Value" value={fundamental.intrinsic_value_estimate} />
           <MetricRow label="Margin of Safety" value={fundamental.margin_of_safety} suffix="%" />
         </div>
+
+        {/* Quant & Risk Column */}
+        {quant && (
+          <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-indigo-400" />
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Risk & Quant</h4>
+            </div>
+            <MetricRow label="Beta" value={quant.beta?.toFixed(2)} />
+            <MetricRow label="Alpha" value={quant.alpha ? `${(quant.alpha * 100).toFixed(2)}%` : null} />
+            <MetricRow label="Sharpe Ratio" value={quant.sharpe_ratio?.toFixed(2)} />
+            <MetricRow label="Sortino Ratio" value={quant.sortino_ratio?.toFixed(2)} />
+            <MetricRow label="Ann. Return" value={quant.annualized_return ? `${(quant.annualized_return * 100).toFixed(2)}%` : null} />
+            <MetricRow label="Ann. Volatility" value={quant.annualized_volatility ? `${(quant.annualized_volatility * 100).toFixed(2)}%` : null} />
+            <MetricRow label="Benchmark" value={quant.benchmark_ticker} />
+          </div>
+        )}
 
         {/* Sentiment Column */}
         <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4">

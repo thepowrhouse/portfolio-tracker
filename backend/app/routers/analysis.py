@@ -8,6 +8,7 @@ from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
+from app.services.quant import get_quant_metrics
 from app.routers.portfolio import _portfolio_db, verify_access
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -16,14 +17,17 @@ def analyze_single_holding(holding):
     technical = get_technical_analysis(holding.ticker, holding.asset_class)
     fundamental = get_fundamental_analysis(holding.ticker, holding.asset_class)
     sentiment = analyze_sentiment(holding.ticker, holding.asset_class)
+    quant = get_quant_metrics(holding.ticker, holding.asset_class)
     
-    return generate_recommendation(
+    recommendation = generate_recommendation(
         ticker=holding.ticker,
         company_name=holding.company_name,
         technical=technical,
         fundamental=fundamental,
         sentiment=sentiment
     )
+    recommendation.quant = quant
+    return recommendation
 
 @router.get("/batch", response_model=List[StockRecommendation])
 async def get_batch_analysis(email: str = Depends(verify_access)):
@@ -64,6 +68,7 @@ async def get_stock_analysis(ticker: str, email: str = Depends(verify_access)):
     technical = get_technical_analysis(ticker, asset_class)
     fundamental = get_fundamental_analysis(ticker, asset_class)
     sentiment = analyze_sentiment(ticker, asset_class)
+    quant = get_quant_metrics(ticker, asset_class)
     
     recommendation = generate_recommendation(
         ticker=ticker,
@@ -72,5 +77,5 @@ async def get_stock_analysis(ticker: str, email: str = Depends(verify_access)):
         fundamental=fundamental,
         sentiment=sentiment
     )
-    
+    recommendation.quant = quant
     return recommendation

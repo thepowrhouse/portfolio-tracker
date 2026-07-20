@@ -5,6 +5,7 @@ import { AssetAllocation } from "@/components/dashboard/AssetAllocation";
 import { CSVUploader } from "@/components/dashboard/CSVUploader";
 import { HoldingsTable } from "@/components/holdings/HoldingsTable";
 import { SectorPerformanceTable } from "@/components/sectors/SectorPerformanceTable";
+import { QuantCard } from "@/components/dashboard/QuantCard";
 import { usePortfolio } from "@/store/PortfolioContext";
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -152,8 +153,9 @@ function DashboardContent() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
           <NetWorthCard />
+          <QuantCard />
           <AssetAllocation activeHorizon={activeHorizon} />
           <CSVUploader />
         </div>

@@ -132,10 +132,28 @@ class HorizonVerdict(BaseModel):
     rationale: List[VerdictRationale]
     overall_summary: str
 
+class QuantMetrics(BaseModel):
+    ticker: str
+    beta: float
+    alpha: float
+    sharpe_ratio: float
+    sortino_ratio: float
+    annualized_return: float
+    annualized_volatility: float
+    benchmark_ticker: str
+
+class PortfolioQuantMetrics(BaseModel):
+    portfolio_beta: float
+    portfolio_alpha: float
+    portfolio_sharpe: float
+    portfolio_sortino: float
+    holdings_analyzed: int
+
 class StockRecommendation(BaseModel):
     ticker: str
     company_name: str
     technical: TechnicalIndicators
     fundamental: FundamentalMetrics
     sentiment: SentimentAnalysis
+    quant: Optional[QuantMetrics] = None
     horizons: dict[str, HorizonVerdict]

@@ -11,7 +11,11 @@ from app.services.recommender import generate_recommendation
 from app.db import log_upload, get_user_status
 import httpx
 import os
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from app.models import PortfolioQuantMetrics
+from app.services.quant import get_quant_metrics
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -127,6 +131,82 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
         net_worth_usd=round(net_worth / rate, 2),
         last_sync=datetime.utcnow(),
         usd_to_inr=rate
+    )
+
+@router.get("/quant", response_model=PortfolioQuantMetrics)
+async def get_portfolio_quant(email: str = Depends(verify_access)):
+    """Calculate portfolio-level weighted risk metrics (Alpha, Beta, Sharpe, Sortino)."""
+    global _portfolio_db
+    user_portfolio = _portfolio_db[email]
+    
+    if not user_portfolio:
+        return PortfolioQuantMetrics(
+            portfolio_beta=1.0,
+            portfolio_alpha=0.0,
+            portfolio_sharpe=0.0,
+            portfolio_sortino=0.0,
+            holdings_analyzed=0
+        )
+        
+    rate = await get_forex_rate()
+    
+    # Need current prices to calculate weights
+    enriched = enrich_holdings(user_portfolio)
+    
+    # Filter out holdings with 0 value
+    valid_holdings = [h for h in enriched if h.quantity > 0 and h.current_price and h.current_price > 0]
+    
+    if not valid_holdings:
+        return PortfolioQuantMetrics(
+            portfolio_beta=1.0,
+            portfolio_alpha=0.0,
+            portfolio_sharpe=0.0,
+            portfolio_sortino=0.0,
+            holdings_analyzed=0
+        )
+        
+    total_value_inr = 0
+    weights = []
+    
+    for h in valid_holdings:
+        val = h.current_price * h.quantity
+        if h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
+            val *= rate
+        weights.append((h, val))
+        total_value_inr += val
+        
+    loop = asyncio.get_event_loop()
+    
+    def fetch_quant(holding):
+        return get_quant_metrics(holding.ticker, holding.asset_class)
+        
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        tasks = [
+            loop.run_in_executor(executor, fetch_quant, h)
+            for h, _ in weights
+        ]
+        metrics_results = await asyncio.gather(*tasks)
+        
+    # Calculate weighted averages
+    weighted_beta = 0
+    weighted_alpha = 0
+    weighted_sharpe = 0
+    weighted_sortino = 0
+    
+    for i, (holding, val) in enumerate(weights):
+        weight = val / total_value_inr if total_value_inr > 0 else 0
+        m = metrics_results[i]
+        weighted_beta += (m.beta * weight)
+        weighted_alpha += (m.alpha * weight)
+        weighted_sharpe += (m.sharpe_ratio * weight)
+        weighted_sortino += (m.sortino_ratio * weight)
+        
+    return PortfolioQuantMetrics(
+        portfolio_beta=round(weighted_beta, 2),
+        portfolio_alpha=round(weighted_alpha, 4),
+        portfolio_sharpe=round(weighted_sharpe, 2),
+        portfolio_sortino=round(weighted_sortino, 2),
+        holdings_analyzed=len(weights)
     )
 
 @router.post("/sync")
