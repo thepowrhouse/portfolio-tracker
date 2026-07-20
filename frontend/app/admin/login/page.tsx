@@ -20,8 +20,7 @@ export default function AdminLogin() {
       });
 
       if (res.ok) {
-        router.push("/admin");
-        router.refresh(); // Force server components to re-evaluate cookies
+        window.location.href = "/admin"; // Force a hard reload to bypass Next.js client cache
       } else {
         const data = await res.json();
         setError(data.message || "Invalid password");
