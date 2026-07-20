@@ -327,8 +327,6 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
               </div>
             </div>
           )}
-            </div>
-          )}
         </div>
       </div>
       )}
