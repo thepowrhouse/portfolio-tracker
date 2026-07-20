@@ -522,8 +522,7 @@ def parse_csv_by_broker(file_bytes: bytes, broker: BrokerType) -> List[CSVHoldin
     elif broker == BrokerType.ANGELONE:
         return parse_angelone_csv(file_bytes)
     elif broker == BrokerType.RSU:
-        # RSU is manual entry, not CSV
-        return []
+        return parse_rsu_csv(file_bytes)
     else:
         raise CSVParseError(f"Unknown broker type: {broker}")
 
@@ -707,4 +706,87 @@ def _parse_angelone_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHo
                 is_order_history=True
             ))
             
+    return holdings
+
+def parse_rsu_csv(file_bytes: bytes) -> List[CSVHolding]:
+    """
+    Parse RSU CSV (e.g. from Morgan Stanley / Shareworks / Custom schema).
+    Schema typically has: Investment (walmart-inc), Total Units, Invested Amount, etc.
+    """
+    try:
+        df = pd.read_csv(io.BytesIO(file_bytes))
+    except Exception as e:
+        raise CSVParseError(f"Failed to read RSU CSV: {e}")
+    
+    actual_cols = {c.lower().strip(): c for c in df.columns}
+    
+    inv_col = actual_cols.get("investment") or actual_cols.get("stock") or actual_cols.get("company")
+    qty_col = actual_cols.get("total units") or actual_cols.get("quantity") or actual_cols.get("units")
+    avg_col = actual_cols.get("average cost") or actual_cols.get("avg cost")
+    invested_amt_col = actual_cols.get("invested amount")
+    
+    if not inv_col or not qty_col:
+        raise CSVParseError(f"Could not find required columns (Investment, Total Units) in RSU CSV. Found columns: {list(df.columns)}")
+    
+    # We want to aggregate units by company so we don't have 20 rows of WMT
+    agg_map = defaultdict(float)
+    
+    for _, row in df.iterrows():
+        try:
+            investment_name = str(row[inv_col]).strip().lower()
+            qty = clean_number(row[qty_col])
+            
+            if qty <= 0:
+                continue
+                
+            agg_map[investment_name] += qty
+        except (ValueError, TypeError):
+            continue
+            
+    holdings = []
+    
+    for inv_name, total_qty in agg_map.items():
+        # Custom mapping for popular RSU names
+        ticker = "UNKNOWN"
+        company_name = inv_name.upper()
+        
+        if "walmart" in inv_name:
+            ticker = "WMT"
+            company_name = "Walmart Inc."
+        elif "amazon" in inv_name:
+            ticker = "AMZN"
+            company_name = "Amazon.com, Inc."
+        elif "google" in inv_name or "alphabet" in inv_name:
+            ticker = "GOOGL"
+            company_name = "Alphabet Inc."
+        elif "microsoft" in inv_name:
+            ticker = "MSFT"
+            company_name = "Microsoft Corporation"
+        elif "apple" in inv_name:
+            ticker = "AAPL"
+            company_name = "Apple Inc."
+        elif "meta" in inv_name or "facebook" in inv_name:
+            ticker = "META"
+            company_name = "Meta Platforms, Inc."
+        else:
+            # Fallback to general resolve_ticker if we don't have a manual mapping
+            t, n = resolve_ticker(inv_name)
+            if t:
+                ticker = t
+                if n:
+                    company_name = n
+
+        # RSUs are usually granted, so cost basis can be 0 or derived from vesting. 
+        # The prompt states: "The current day rupee value can be computed using the number of units multiplied by the current value and convert it from dollar to rupee."
+        # This implies it should be treated as US_EQUITY and evaluated live.
+        
+        holdings.append(CSVHolding(
+            ticker=ticker,
+            company_name=company_name,
+            quantity=total_qty,
+            avg_price=0.0,
+            broker=BrokerType.RSU,
+            asset_class=AssetClass.US_EQUITY
+        ))
+        
     return holdings

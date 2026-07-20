@@ -225,9 +225,6 @@ async def sync_portfolio(
     global _portfolio_db
     user_portfolio = _portfolio_db[email]
     
-    if broker == BrokerType.RSU:
-        raise HTTPException(400, "RSU entries use manual POST, not CSV upload")
-    
     contents = await file.read()
     
     try:

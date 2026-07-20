@@ -20,6 +20,9 @@ const sampleFiles = {
   angelone: [
     { label: "Holdings", url: "/samples/angelone_holdings.csv" },
     { label: "Tradebook (XIRR)", url: "/samples/angelone_tradebook.csv" }
+  ],
+  rsu: [
+    { label: "Company RSUs", url: "/samples/walmart_rsu.csv" }
   ]
 };
 
@@ -97,6 +100,7 @@ export function CSVUploader() {
             <option value="groww">Groww Holdings</option>
             <option value="indmoney">INDmoney Portfolio</option>
             <option value="angelone">AngelOne Details</option>
+            <option value="rsu">Company RSUs</option>
           </select>
           <button
             onClick={handleReset}
