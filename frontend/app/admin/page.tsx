@@ -4,7 +4,7 @@ import Link from "next/link";
 import AccessManager from "./components/AccessManager";
 
 async function getAdminData(token: string) {
-  let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  let apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   // Node.js fetch prefers IPv6, which fails if Uvicorn is bound to IPv4 0.0.0.0
   apiUrl = apiUrl.replace("localhost", "127.0.0.1");
   try {

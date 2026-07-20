@@ -12,6 +12,8 @@ RUN npm ci
 COPY . .
 
 # Build the Next.js application in standalone mode
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build
 
 # Step 2. Production image, copy all the files and run next

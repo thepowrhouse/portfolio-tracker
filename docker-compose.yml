@@ -17,6 +17,8 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: portfolio-frontend
     restart: unless-stopped
     ports:
@@ -30,5 +32,5 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      # The frontend container can reach the backend container via the Docker network using its service name
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      # The frontend server container can reach the backend container directly
+      - API_URL=http://backend:8000
