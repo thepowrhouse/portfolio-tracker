@@ -48,6 +48,8 @@ const aggregateHoldings = (holdings: PortfolioHolding[]): AggregatedHolding[] =>
         avg_price: newAvgPrice,
         pnl_absolute: newPnlAbsolute,
         pnl_percent: newPnlPercent,
+        day_change_absolute: (existing.day_change_absolute || 0) + (h.day_change_absolute || 0),
+        day_change_percent: h.day_change_percent,
         brokers,
         broker: brokers.length > 1 ? ("multiple" as any) : brokers[0], 
         xirr: newXirr
@@ -299,6 +301,12 @@ export function HoldingsTable({
                   </div>
                 </div>
               </th>
+              <th className="px-4 py-2 font-medium text-right">
+                <div className="flex flex-col items-end gap-1">
+                  <div>1D Change</div>
+                  <div className="text-slate-400">1D (%)</div>
+                </div>
+              </th>
               <th className="px-4 py-3 font-medium text-right cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('xirr')}>
                 XIRR <SortIcon columnKey="xirr" />
               </th>
@@ -400,6 +408,25 @@ export function HoldingsTable({
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
+                      <div className="flex flex-col items-end gap-1">
+                        <div className={`flex items-center justify-end gap-1 tabular-nums font-medium ${
+                          (holding.day_change_absolute || 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                        }`}>
+                          {(holding.day_change_absolute || 0) >= 0 ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3" />
+                          )}
+                          {formatINR(getINRValue(Math.abs(holding.day_change_absolute || 0), holding.asset_class))}
+                        </div>
+                        <div className={`tabular-nums text-xs font-medium ${
+                          (holding.day_change_percent || 0) >= 0 ? "text-emerald-500/80" : "text-red-500/80"
+                        }`}>
+                          {(holding.day_change_percent || 0) >= 0 ? "+" : ""}{holding.day_change_percent?.toFixed(2)}%
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       {holding.xirr != null ? (
                         <div className={`tabular-nums text-sm font-medium ${
                           holding.xirr >= 0 ? "text-emerald-400" : "text-red-400"
@@ -463,7 +490,7 @@ export function HoldingsTable({
                   </tr>
                   {isExpanded && rec && (
                     <tr key={`${holding.id}-detail`}>
-                      <td colSpan={11} className="p-0">
+                      <td colSpan={12} className="p-0">
                         <StockDetailPanel recommendation={rec} activeHorizon={activeHorizon} />
                       </td>
                     </tr>

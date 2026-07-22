@@ -107,23 +107,20 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             # yf.download handles rate limits much better for bulk fetching
             hist = yf.download(tickers_list, period="5d", progress=False)["Close"]
             
-            # Forward-fill to handle timezone differences between US and Indian markets
-            hist = hist.ffill()
-            
             if len(tickers_list) == 1:
-                if not hist.empty:
-                    price_map[tickers_list[0]] = float(hist.iloc[-1])
-                    if len(hist) > 1:
-                        prev_map[tickers_list[0]] = float(hist.iloc[-2])
+                col = hist.dropna()
+                if not col.empty:
+                    price_map[tickers_list[0]] = float(col.iloc[-1])
+                    if len(col) > 1:
+                        prev_map[tickers_list[0]] = float(col.iloc[-2])
             else:
-                if not hist.empty:
-                    last_row = hist.iloc[-1]
-                    prev_row = hist.iloc[-2] if len(hist) > 1 else None
-                    for t in tickers_list:
-                        if t in last_row and not pd.isna(last_row[t]):
-                            price_map[t] = float(last_row[t])
-                        if prev_row is not None and t in prev_row and not pd.isna(prev_row[t]):
-                            prev_map[t] = float(prev_row[t])
+                for t in tickers_list:
+                    if t in hist.columns:
+                        col = hist[t].dropna()
+                        if not col.empty:
+                            price_map[t] = float(col.iloc[-1])
+                            if len(col) > 1:
+                                prev_map[t] = float(col.iloc[-2])
         except Exception as e:
             print(f"Batch fetch error: {e}")
 
