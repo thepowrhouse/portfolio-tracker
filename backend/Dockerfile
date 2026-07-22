@@ -2,6 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Install ca-certificates to fix yfinance curl_cffi SSL issues
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Install PyTorch (CPU only) to save 2GB+ of space
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
