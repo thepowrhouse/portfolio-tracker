@@ -94,12 +94,12 @@ export function HoldingsTable({
     return recommendations.find((r) => r.ticker === ticker);
   };
 
-  const getINRValue = (value: number | null, assetClass: string) => {
+  const getINRValue = (value: number | null | undefined, assetClass: string) => {
     if (value === null || value === undefined) return null;
     return assetClass === "us_equity" ? value * (portfolio?.usd_to_inr || 83.5) : value;
   };
 
-  const formatINR = (value: number | null) => {
+  const formatINR = (value: number | null | undefined) => {
     if (value === null || value === undefined) return "—";
     return `₹${value.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
