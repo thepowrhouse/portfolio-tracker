@@ -272,8 +272,8 @@ export function HoldingsTable({
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto pb-4">
-        <table className="w-full min-w-[1100px] text-sm">
+      <div className="overflow-x-auto pb-4 custom-scrollbar">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-left text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
               <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('company')}>
@@ -345,11 +345,11 @@ export function HoldingsTable({
                     className="border-b border-slate-800/50 transition-colors hover:bg-slate-800/50 cursor-pointer"
                   >
                     <td className="px-4 py-3">
-                      <div>
-                        <div className="font-medium text-slate-200">
+                      <div className="max-w-[180px]">
+                        <div className="font-medium text-slate-200 truncate" title={holding.company_name}>
                           {holding.company_name}
                         </div>
-                        <div className="text-xs text-slate-500 font-mono">
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">
                           {holding.ticker}
                         </div>
                       </div>
@@ -364,9 +364,9 @@ export function HoldingsTable({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs text-slate-400 truncate max-w-[120px] block" title={rec?.fundamental?.industry || "—"}>
+                      <div className="text-xs text-slate-400 max-w-[100px] whitespace-normal break-words" title={rec?.fundamental?.industry || "—"}>
                         {rec?.fundamental?.industry || "—"}
-                      </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-300">
                       {holding.quantity.toLocaleString()}
