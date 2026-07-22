@@ -104,23 +104,22 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     
     if tickers_list:
         try:
-            # yf.download handles rate limits much better for bulk fetching
-            hist = yf.download(tickers_list, period="5d", progress=False)["Close"]
-            
-            if len(tickers_list) == 1:
-                col = hist.dropna()
-                if not col.empty:
-                    price_map[tickers_list[0]] = float(col.iloc[-1])
-                    if len(col) > 1:
-                        prev_map[tickers_list[0]] = float(col.iloc[-2])
-            else:
-                for t in tickers_list:
-                    if t in hist.columns:
-                        col = hist[t].dropna()
-                        if not col.empty:
-                            price_map[t] = float(col.iloc[-1])
-                            if len(col) > 1:
-                                prev_map[t] = float(col.iloc[-2])
+            # Use Yahoo Finance bulk quote API for true live prices and previous close
+            # This avoids stale '1d' history and rate limits of .info
+            # Chunk symbols if there are too many (e.g. > 50)
+            chunk_size = 50
+            for i in range(0, len(tickers_list), chunk_size):
+                chunk = tickers_list[i:i + chunk_size]
+                symbols_str = ",".join(chunk)
+                url = f"https://query2.finance.yahoo.com/v7/finance/quote?symbols={symbols_str}"
+                r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
+                if r.status_code == 200:
+                    results = r.json().get('quoteResponse', {}).get('result', [])
+                    for quote in results:
+                        sym = quote.get('symbol')
+                        if sym:
+                            price_map[sym] = quote.get('regularMarketPrice')
+                            prev_map[sym] = quote.get('regularMarketPreviousClose')
         except Exception as e:
             print(f"Batch fetch error: {e}")
 
