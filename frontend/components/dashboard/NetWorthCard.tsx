@@ -14,11 +14,20 @@ export function NetWorthCard() {
   let totalPnl = 0;
   let weightedXirrSum = 0;
   let investedWithXirr = 0;
+  let totalDayChange = 0;
+  let totalPrevCloseValue = 0;
   
   portfolio?.holdings.forEach((h) => {
     const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
     const invested = h.avg_price * h.quantity * multiplier;
     totalInvestment += invested;
+    
+    if (h.day_change_absolute != null) {
+      totalDayChange += (h.day_change_absolute * multiplier);
+      const currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
+      totalPrevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
+    }
+    
     if (h.xirr != null) {
       weightedXirrSum += (h.xirr * invested);
       investedWithXirr += invested;
@@ -28,6 +37,7 @@ export function NetWorthCard() {
   totalPnl = netWorth - totalInvestment;
   const totalPnlPercent = totalInvestment > 0 ? (totalPnl / totalInvestment) * 100 : 0;
   const portfolioXirr = investedWithXirr > 0 ? (weightedXirrSum / investedWithXirr) : null;
+  const totalDayChangePercent = totalPrevCloseValue > 0 ? (totalDayChange / totalPrevCloseValue) * 100 : 0;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
@@ -67,6 +77,13 @@ export function NetWorthCard() {
           </span>
           <span className="text-slate-500">
             ({totalPnl >= 0 ? "+" : ""}{totalPnlPercent.toFixed(2)}%)
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
+          <span>1D Change:</span>
+          <span className={`tabular-nums font-medium ${totalDayChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+            {totalDayChange >= 0 ? "+" : ""}₹{Math.abs(Math.round(totalDayChange)).toLocaleString("en-IN")} ({totalDayChange >= 0 ? "+" : ""}{totalDayChangePercent.toFixed(2)}%)
           </span>
         </div>
         
