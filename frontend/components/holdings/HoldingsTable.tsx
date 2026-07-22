@@ -275,60 +275,60 @@ export function HoldingsTable({
       <div className="overflow-x-auto pb-4 custom-scrollbar">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-800 text-left text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
-              <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('company')}>
+            <tr className="border-b border-slate-800 text-left text-xs uppercase tracking-wider text-slate-500">
+              <th className="px-2 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('company')}>
                 Company <SortIcon columnKey="company" />
               </th>
-              <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('broker')}>
+              <th className="px-2 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('broker')}>
                 Broker <SortIcon columnKey="broker" />
               </th>
-              <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('sector')}>
+              <th className="px-2 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('sector')}>
                 Sector <SortIcon columnKey="sector" />
               </th>
-              <th className="px-4 py-3 font-medium text-right">Qty</th>
-              <th className="px-4 py-2 font-medium text-right">
+              <th className="px-2 py-3 font-medium text-right">Qty</th>
+              <th className="px-2 py-2 font-medium text-right">
                 <div className="flex flex-col items-end gap-1">
                   <div>Avg Price</div>
                   <div className="text-slate-400">Current</div>
                 </div>
               </th>
-              <th className="px-4 py-2 font-medium text-right">
+              <th className="px-2 py-2 font-medium text-right">
                 <div className="flex flex-col items-end gap-1">
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full" onClick={() => handleSort('invested')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full whitespace-nowrap" onClick={() => handleSort('invested')}>
                     <span>Invested</span> <SortIcon columnKey="invested" />
                   </div>
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400" onClick={() => handleSort('current_value')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400 whitespace-nowrap" onClick={() => handleSort('current_value')}>
                     <span>Current</span> <SortIcon columnKey="current_value" />
                   </div>
                 </div>
               </th>
-              <th className="px-4 py-2 font-medium text-right">
+              <th className="px-2 py-2 font-medium text-right">
                 <div className="flex flex-col items-end gap-1">
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full" onClick={() => handleSort('pnl_absolute')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full whitespace-nowrap" onClick={() => handleSort('pnl_absolute')}>
                     <span>P&L (Amt)</span> <SortIcon columnKey="pnl_absolute" />
                   </div>
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400" onClick={() => handleSort('pnl_percent')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400 whitespace-nowrap" onClick={() => handleSort('pnl_percent')}>
                     <span>P&L (%)</span> <SortIcon columnKey="pnl_percent" />
                   </div>
                 </div>
               </th>
-              <th className="px-4 py-2 font-medium text-right">
+              <th className="px-2 py-2 font-medium text-right">
                 <div className="flex flex-col items-end gap-1">
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full" onClick={() => handleSort('day_change_absolute')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full whitespace-nowrap" onClick={() => handleSort('day_change_absolute')}>
                     <span>1D Change</span> <SortIcon columnKey="day_change_absolute" />
                   </div>
-                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400" onClick={() => handleSort('day_change_percent')}>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400 whitespace-nowrap" onClick={() => handleSort('day_change_percent')}>
                     <span>1D (%)</span> <SortIcon columnKey="day_change_percent" />
                   </div>
                 </div>
               </th>
-              <th className="px-4 py-3 font-medium text-right cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('xirr')}>
+              <th className="px-2 py-3 font-medium text-right cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('xirr')}>
                 XIRR <SortIcon columnKey="xirr" />
               </th>
-              <th className="px-4 py-3 font-medium text-center cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('action')}>
+              <th className="px-2 py-3 font-medium text-center cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('action')}>
                 Action <SortIcon columnKey="action" />
               </th>
-              <th className="px-4 py-3 font-medium w-10"></th>
+              <th className="px-2 py-3 font-medium w-6"></th>
             </tr>
           </thead>
           <tbody>
@@ -344,9 +344,9 @@ export function HoldingsTable({
                     }
                     className="border-b border-slate-800/50 transition-colors hover:bg-slate-800/50 cursor-pointer"
                   >
-                    <td className="px-4 py-3">
-                      <div className="max-w-[180px]">
-                        <div className="font-medium text-slate-200 truncate" title={holding.company_name}>
+                    <td className="px-2 py-3">
+                      <div className="max-w-[140px]">
+                        <div className="font-medium text-slate-200 whitespace-normal break-words" title={holding.company_name}>
                           {holding.company_name}
                         </div>
                         <div className="text-xs text-slate-500 font-mono mt-0.5">
@@ -354,24 +354,24 @@ export function HoldingsTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-3">
                       <div className="flex flex-wrap gap-1">
                         {holding.brokers.map((b) => (
-                          <span key={b} className="inline-flex items-center rounded-md bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-400 capitalize">
+                          <span key={b} className="inline-flex items-center rounded-md bg-slate-800 px-1.5 py-0.5 text-xs font-medium text-slate-400 capitalize">
                             {b}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="text-xs text-slate-400 max-w-[100px] whitespace-normal break-words" title={rec?.fundamental?.industry || "—"}>
+                    <td className="px-2 py-3">
+                      <div className="text-xs text-slate-400 max-w-[90px] whitespace-normal break-words" title={rec?.fundamental?.industry || "—"}>
                         {rec?.fundamental?.industry || "—"}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-300">
+                    <td className="px-2 py-3 text-right tabular-nums text-slate-300">
                       {holding.quantity.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="px-2 py-3 text-right tabular-nums">
                       <div className="flex flex-col items-end gap-1">
                         <div className="text-slate-300 font-medium">
                           {formatINR(getINRValue(holding.avg_price, holding.asset_class))}
@@ -387,12 +387,12 @@ export function HoldingsTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="px-2 py-3 text-right tabular-nums">
                       <div className="flex flex-col items-end gap-1">
-                        <div className="text-slate-300 font-medium">
+                        <div className="text-slate-300 font-medium whitespace-nowrap">
                           {formatINR(getINRValue(holding.quantity * holding.avg_price, holding.asset_class))}
                         </div>
-                        <div className={`text-xs font-medium ${
+                        <div className={`text-xs font-medium whitespace-nowrap ${
                           (holding.current_price || 0) > holding.avg_price
                             ? "text-emerald-400"
                             : (holding.current_price || 0) < holding.avg_price
@@ -403,69 +403,69 @@ export function HoldingsTable({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 py-3 text-right">
                       <div className="flex flex-col items-end gap-1">
-                        <div className={`flex items-center justify-end gap-1 tabular-nums font-medium ${
+                        <div className={`flex items-center justify-end gap-1 tabular-nums font-medium whitespace-nowrap ${
                           (holding.pnl_absolute || 0) >= 0 ? "text-emerald-400" : "text-red-400"
                         }`}>
                           {(holding.pnl_absolute || 0) >= 0 ? (
-                            <TrendingUp className="h-3 w-3" />
+                            <TrendingUp className="h-3 w-3 flex-shrink-0" />
                           ) : (
-                            <TrendingDown className="h-3 w-3" />
+                            <TrendingDown className="h-3 w-3 flex-shrink-0" />
                           )}
                           {formatINR(getINRValue(Math.abs(holding.pnl_absolute || 0), holding.asset_class))}
                         </div>
-                        <div className={`tabular-nums text-xs font-medium ${
+                        <div className={`tabular-nums text-xs font-medium whitespace-nowrap ${
                           (holding.pnl_percent || 0) >= 0 ? "text-emerald-500/80" : "text-red-500/80"
                         }`}>
                           {(holding.pnl_percent || 0) >= 0 ? "+" : ""}{holding.pnl_percent?.toFixed(2)}%
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 py-3 text-right">
                       <div className="flex flex-col items-end gap-1">
-                        <div className={`flex items-center justify-end gap-1 tabular-nums font-medium ${
+                        <div className={`flex items-center justify-end gap-1 tabular-nums font-medium whitespace-nowrap ${
                           (holding.day_change_absolute || 0) >= 0 ? "text-emerald-400" : "text-red-400"
                         }`}>
                           {(holding.day_change_absolute || 0) >= 0 ? (
-                            <TrendingUp className="h-3 w-3" />
+                            <TrendingUp className="h-3 w-3 flex-shrink-0" />
                           ) : (
-                            <TrendingDown className="h-3 w-3" />
+                            <TrendingDown className="h-3 w-3 flex-shrink-0" />
                           )}
                           {formatINR(getINRValue(Math.abs(holding.day_change_absolute || 0), holding.asset_class))}
                         </div>
-                        <div className={`tabular-nums text-xs font-medium ${
+                        <div className={`tabular-nums text-xs font-medium whitespace-nowrap ${
                           (holding.day_change_percent || 0) >= 0 ? "text-emerald-500/80" : "text-red-500/80"
                         }`}>
                           {(holding.day_change_percent || 0) >= 0 ? "+" : ""}{holding.day_change_percent?.toFixed(2)}%
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-2 py-3 text-right">
                       {holding.xirr != null ? (
-                        <div className={`tabular-nums text-sm font-medium ${
+                        <div className={`tabular-nums text-sm font-medium whitespace-nowrap ${
                           holding.xirr >= 0 ? "text-emerald-400" : "text-red-400"
                         }`}>
                           {holding.xirr >= 0 ? "+" : ""}{holding.xirr.toFixed(2)}%
                         </div>
                       ) : holding.pnl_percent != null ? (
                         <div className="flex flex-col items-end gap-0.5">
-                          <div className={`tabular-nums text-sm font-medium ${
+                          <div className={`tabular-nums text-sm font-medium whitespace-nowrap ${
                             holding.pnl_percent >= 0 ? "text-emerald-400" : "text-red-400"
                           }`}>
                             {holding.pnl_percent >= 0 ? "+" : ""}{holding.pnl_percent.toFixed(2)}%
                           </div>
-                          <span className="text-[10px] text-slate-500 uppercase tracking-wider">P&L Fallback</span>
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider whitespace-nowrap">P&L Fallback</span>
                         </div>
                       ) : (
                         <span className="text-slate-600 text-sm">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2 py-3 text-center">
                       {rec && rec.horizons && rec.horizons[activeHorizon] ? (
                         <div className="flex flex-col items-center gap-1">
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${
                               rec.horizons[activeHorizon].recommendation === "BUY"
                                 ? "bg-emerald-500/10 text-emerald-400"
                                 : rec.horizons[activeHorizon].recommendation === "SELL"
@@ -476,7 +476,7 @@ export function HoldingsTable({
                             {rec.horizons[activeHorizon].recommendation}
                           </span>
                           {rec.horizons[activeHorizon].trend && (
-                            <span className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-0.5 ${
+                            <span className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-0.5 whitespace-nowrap ${
                               rec.horizons[activeHorizon].trend === "uptrend" ? "text-emerald-500" :
                               rec.horizons[activeHorizon].trend === "downtrend" ? "text-red-500" :
                               "text-amber-500"
@@ -495,7 +495,7 @@ export function HoldingsTable({
                         <span className="text-slate-600 text-xs">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-3">
                       {isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-slate-500" />
                       ) : (
