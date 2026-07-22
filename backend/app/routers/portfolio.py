@@ -65,14 +65,38 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
 
     import yfinance as yf
     import pandas as pd
+    import requests
+    import concurrent.futures
+    
+    def fetch_name(ticker):
+        try:
+            url = f"https://query2.finance.yahoo.com/v1/finance/search?q={ticker}"
+            r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+            if r.status_code == 200:
+                quotes = r.json().get('quotes', [])
+                if quotes:
+                    return quotes[0].get('longname') or quotes[0].get('shortname') or ticker
+        except:
+            pass
+        return ticker
     
     # 1. Collect unique tickers to fetch in bulk
     tickers_to_fetch = set()
+    tickers_needing_names = set()
     for h in holdings:
         yf_ticker = h.ticker
         if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
             yf_ticker += ".NS"
         tickers_to_fetch.add(yf_ticker)
+        
+        if h.company_name == h.ticker:
+            tickers_needing_names.add(yf_ticker)
+            
+    name_map = {}
+    if tickers_needing_names:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(fetch_name, tickers_needing_names))
+            name_map = dict(zip(tickers_needing_names, results))
         
     tickers_list = list(tickers_to_fetch)
     price_map = {}
@@ -105,6 +129,11 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             yf_ticker = h.ticker
             if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
                 yf_ticker += ".NS"
+                
+            if h.company_name == h.ticker:
+                fetched_name = name_map.get(yf_ticker)
+                if fetched_name and fetched_name != yf_ticker:
+                    h.company_name = fetched_name
             
             # Fetch from map, or fallback to avg_price if yfinance fails
             current_price = price_map.get(yf_ticker)
