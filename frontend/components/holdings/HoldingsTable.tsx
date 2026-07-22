@@ -76,7 +76,7 @@ export function HoldingsTable({
   const [localHoldings, setLocalHoldings] = useState(portfolio?.holdings || []);
   const [activeTab, setActiveTab] = useState<string>("All");
   const [sortConfig, setSortConfig] = useState<{
-    key: "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr";
+    key: "company" | "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr" | "day_change_absolute" | "day_change_percent";
     direction: "asc" | "desc";
   } | null>(null);
 
@@ -168,6 +168,15 @@ export function HoldingsTable({
         } else if (sortConfig.key === "current_price") {
           aValue = getINRValue(a.current_price, a.asset_class) || 0;
           bValue = getINRValue(b.current_price, b.asset_class) || 0;
+        } else if (sortConfig.key === "company") {
+          aValue = a.company_name.toLowerCase();
+          bValue = b.company_name.toLowerCase();
+        } else if (sortConfig.key === "day_change_absolute") {
+          aValue = getINRValue(a.day_change_absolute, a.asset_class) || 0;
+          bValue = getINRValue(b.day_change_absolute, b.asset_class) || 0;
+        } else if (sortConfig.key === "day_change_percent") {
+          aValue = a.day_change_percent || 0;
+          bValue = b.day_change_percent || 0;
         } else if (sortConfig.key === "xirr") {
           aValue = a.xirr !== null && a.xirr !== undefined ? a.xirr : -Infinity;
           bValue = b.xirr !== null && b.xirr !== undefined ? b.xirr : -Infinity;
@@ -181,7 +190,7 @@ export function HoldingsTable({
     return sortableItems;
   }, [aggregatedHoldings, sortConfig, recommendations, activeHorizon]);
 
-  const handleSort = (key: "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr") => {
+  const handleSort = (key: "company" | "action" | "pnl_absolute" | "pnl_percent" | "broker" | "invested" | "current_value" | "avg_price" | "current_price" | "sector" | "xirr" | "day_change_absolute" | "day_change_percent") => {
     let direction: "asc" | "desc" = "desc";
     if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
       direction = "asc";
@@ -263,11 +272,13 @@ export function HoldingsTable({
           </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto pb-4">
+        <table className="w-full min-w-[1100px] text-sm">
           <thead>
-            <tr className="border-b border-slate-800 text-left text-xs uppercase tracking-wider text-slate-500">
-              <th className="px-4 py-3 font-medium">Company</th>
+            <tr className="border-b border-slate-800 text-left text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">
+              <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('company')}>
+                Company <SortIcon columnKey="company" />
+              </th>
               <th className="px-4 py-3 font-medium cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('broker')}>
                 Broker <SortIcon columnKey="broker" />
               </th>
@@ -303,8 +314,12 @@ export function HoldingsTable({
               </th>
               <th className="px-4 py-2 font-medium text-right">
                 <div className="flex flex-col items-end gap-1">
-                  <div>1D Change</div>
-                  <div className="text-slate-400">1D (%)</div>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full" onClick={() => handleSort('day_change_absolute')}>
+                    <span>1D Change</span> <SortIcon columnKey="day_change_absolute" />
+                  </div>
+                  <div className="cursor-pointer hover:text-slate-300 group transition-colors flex items-center justify-end w-full text-slate-400" onClick={() => handleSort('day_change_percent')}>
+                    <span>1D (%)</span> <SortIcon columnKey="day_change_percent" />
+                  </div>
                 </div>
               </th>
               <th className="px-4 py-3 font-medium text-right cursor-pointer hover:text-slate-300 group transition-colors" onClick={() => handleSort('xirr')}>

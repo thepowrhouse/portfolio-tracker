@@ -118,7 +118,7 @@ function DashboardContent() {
     <div className="min-h-screen bg-slate-950">
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold text-slate-100">Portfolio Tracker</h1>
               <p className="text-xs text-slate-500">Multi-broker investment advisor</p>
@@ -153,15 +153,15 @@ function DashboardContent() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <NetWorthCard />
           <AssetAllocation activeHorizon={activeHorizon} />
           <CSVUploader />
         </div>
 
         <div>
-          <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
-            <div className="flex space-x-6">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-2">
+            <div className="flex overflow-x-auto space-x-6 pb-1 custom-scrollbar">
               <button
                 onClick={() => setActiveView("Holdings")}
                 className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
