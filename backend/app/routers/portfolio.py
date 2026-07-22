@@ -106,6 +106,10 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
         try:
             # yf.download handles rate limits much better for bulk fetching
             hist = yf.download(tickers_list, period="5d", progress=False)["Close"]
+            
+            # Forward-fill to handle timezone differences between US and Indian markets
+            hist = hist.ffill()
+            
             if len(tickers_list) == 1:
                 if not hist.empty:
                     price_map[tickers_list[0]] = float(hist.iloc[-1])
