@@ -70,6 +70,8 @@ class PortfolioHolding(BaseModel):
     last_updated: datetime = Field(default_factory=datetime.utcnow)
     pnl_absolute: Optional[float] = None
     pnl_percent: Optional[float] = None
+    day_change_absolute: Optional[float] = None
+    day_change_percent: Optional[float] = None
     xirr: Optional[float] = None
     cashflows: Optional[List[CashFlow]] = None
 

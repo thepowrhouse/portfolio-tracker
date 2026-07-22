@@ -87,26 +87,34 @@ export function NetWorthCard() {
             {Object.entries(
               portfolio.holdings.reduce((acc, h) => {
                 const broker = h.broker || 'unknown';
-                if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0 };
+                if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0 };
                 
                 const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
                 const invested = h.avg_price * h.quantity * multiplier;
                 
                 acc[broker].invested += invested;
                 acc[broker].pnl += ((h.current_price || h.avg_price) - h.avg_price) * h.quantity * multiplier;
+                
+                if (h.day_change_absolute != null) {
+                  acc[broker].dayChange += (h.day_change_absolute * multiplier);
+                  const currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
+                  acc[broker].prevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
+                }
+                
                 if (h.xirr != null) {
                   acc[broker].weightedXirrSum += (h.xirr * invested);
                   acc[broker].investedWithXirr += invested;
                 }
                 return acc;
-              }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number }>)
+              }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number }>)
             ).map(([broker, data]) => {
               const pnlPercent = data.invested > 0 ? (data.pnl / data.invested) * 100 : 0;
               const brokerXirr = data.investedWithXirr > 0 ? (data.weightedXirrSum / data.investedWithXirr) : null;
+              const dayChangePercent = data.prevCloseValue > 0 ? (data.dayChange / data.prevCloseValue) * 100 : 0;
               return (
-              <div key={broker} className="flex flex-col gap-1 border-b border-slate-800/50 pb-2 last:border-0 last:pb-0">
+              <div key={broker} className="flex flex-col gap-1 border-b border-slate-800/50 pb-3 pt-1 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="capitalize text-slate-400">{broker}</span>
+                  <span className="capitalize text-slate-400">{broker === "rsu" ? "RSU" : broker}</span>
                   <div className="flex items-center gap-2">
                     <span className={`tabular-nums font-medium ${data.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                       {data.pnl >= 0 ? "+" : ""}₹{Math.abs(data.pnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
@@ -116,9 +124,15 @@ export function NetWorthCard() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex flex-col gap-1">
+                <div className="flex items-start justify-between text-xs text-slate-500 mt-1">
+                  <div className="flex flex-col gap-1.5">
                     <span>Invested: ₹{Math.round(data.invested).toLocaleString("en-IN")}</span>
+                    <span className="flex items-center gap-1">
+                      1D Change: 
+                      <span className={`${data.dayChange >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
+                        {data.dayChange >= 0 ? "+" : ""}₹{Math.abs(Math.round(data.dayChange)).toLocaleString("en-IN")} ({data.dayChange >= 0 ? "+" : ""}{dayChangePercent.toFixed(2)}%)
+                      </span>
+                    </span>
                   </div>
                   {brokerXirr !== null && (
                     <span>XIRR: <span className={`${brokerXirr >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>

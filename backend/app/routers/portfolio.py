@@ -76,20 +76,26 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
         
     tickers_list = list(tickers_to_fetch)
     price_map = {}
+    prev_map = {}
     
     if tickers_list:
         try:
             # yf.download handles rate limits much better for bulk fetching
-            hist = yf.download(tickers_list, period="1d", progress=False)["Close"]
+            hist = yf.download(tickers_list, period="5d", progress=False)["Close"]
             if len(tickers_list) == 1:
                 if not hist.empty:
                     price_map[tickers_list[0]] = float(hist.iloc[-1])
+                    if len(hist) > 1:
+                        prev_map[tickers_list[0]] = float(hist.iloc[-2])
             else:
                 if not hist.empty:
                     last_row = hist.iloc[-1]
+                    prev_row = hist.iloc[-2] if len(hist) > 1 else None
                     for t in tickers_list:
                         if t in last_row and not pd.isna(last_row[t]):
                             price_map[t] = float(last_row[t])
+                        if prev_row is not None and t in prev_row and not pd.isna(prev_row[t]):
+                            prev_map[t] = float(prev_row[t])
         except Exception as e:
             print(f"Batch fetch error: {e}")
 
@@ -109,12 +115,23 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
                     stock = yf.Ticker(yf_ticker)
                     info = stock.info
                     current_price = info.get("currentPrice") or info.get("regularMarketPrice") or h.avg_price
+                    prev_close = info.get("previousClose")
                 except Exception:
                     current_price = h.avg_price
+                    prev_close = None
+            else:
+                prev_close = prev_map.get(yf_ticker)
             
             h.current_price = round(current_price, 2)
             h.pnl_absolute = round((current_price - h.avg_price) * h.quantity, 2)
             h.pnl_percent = round((current_price - h.avg_price) / h.avg_price * 100, 2) if h.avg_price > 0 else 0
+            
+            if prev_close and prev_close > 0:
+                h.day_change_absolute = round((current_price - prev_close) * h.quantity, 2)
+                h.day_change_percent = round((current_price - prev_close) / prev_close * 100, 2)
+            else:
+                h.day_change_absolute = 0.0
+                h.day_change_percent = 0.0
             
             # Compute XIRR if cashflows are available
             if getattr(h, 'cashflows', None) and len(h.cashflows) > 0 and h.quantity > 0:
@@ -136,6 +153,8 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             h.current_price = h.avg_price
             h.pnl_absolute = 0
             h.pnl_percent = 0
+            h.day_change_absolute = 0
+            h.day_change_percent = 0
             
     return holdings
 

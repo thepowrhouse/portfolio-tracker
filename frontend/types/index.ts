@@ -15,6 +15,8 @@ export interface PortfolioHolding {
   last_updated: string;
   pnl_absolute: number | null;
   pnl_percent: number | null;
+  day_change_absolute?: number | null;
+  day_change_percent?: number | null;
   xirr?: number | null;
 }
 
