@@ -104,17 +104,18 @@ export function NetWorthCard() {
             {Object.entries(
               portfolio.holdings.reduce((acc, h) => {
                 const broker = h.broker || 'unknown';
-                if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0 };
+                if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0, currentValue: 0 };
                 
                 const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
                 const invested = h.avg_price * h.quantity * multiplier;
+                const currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
                 
                 acc[broker].invested += invested;
-                acc[broker].pnl += ((h.current_price || h.avg_price) - h.avg_price) * h.quantity * multiplier;
+                acc[broker].currentValue += currentVal;
+                acc[broker].pnl += (currentVal - invested);
                 
                 if (h.day_change_absolute != null) {
                   acc[broker].dayChange += (h.day_change_absolute * multiplier);
-                  const currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
                   acc[broker].prevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
                 }
                 
@@ -123,7 +124,7 @@ export function NetWorthCard() {
                   acc[broker].investedWithXirr += invested;
                 }
                 return acc;
-              }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number }>)
+              }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number, currentValue: number }>)
             ).map(([broker, data]) => {
               const pnlPercent = data.invested > 0 ? (data.pnl / data.invested) * 100 : 0;
               const brokerXirr = data.investedWithXirr > 0 ? (data.weightedXirrSum / data.investedWithXirr) : null;
@@ -144,6 +145,7 @@ export function NetWorthCard() {
                 <div className="flex items-start justify-between text-xs text-slate-500 mt-1">
                   <div className="flex flex-col gap-1.5">
                     <span>Invested: ₹{Math.round(data.invested).toLocaleString("en-IN")}</span>
+                    <span>Current: <span className="text-slate-300">₹{Math.round(data.currentValue).toLocaleString("en-IN")}</span></span>
                     <span className="flex items-center gap-1">
                       1D Change: 
                       <span className={`${data.dayChange >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
