@@ -65,7 +65,6 @@ export function Sidebar() {
               </Link>
             );
           })}
-        </div>
       </div>
     </div>
   );
