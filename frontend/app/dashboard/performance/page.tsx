@@ -124,40 +124,38 @@ export default function PerformancePage() {
 
             {portfolio && portfolio.holdings.length > 0 && (
               <div className="mt-auto pt-4 border-t border-slate-800">
-                <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">P&L by Broker (Stocks)</div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Stocks</div>
                 <div className="space-y-2">
-                  {Object.entries(
-                    portfolio.holdings.reduce((acc, h) => {
-                      const broker = h.broker || 'unknown';
-                      if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0, currentValue: 0 };
-                      
+                  {(() => {
+                    const data = portfolio.holdings.reduce((acc, h) => {
                       const multiplier = h.asset_class === "us_equity" ? usdRate : 1;
                       const invested = h.avg_price * h.quantity * multiplier;
                       const currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
                       
-                      acc[broker].invested += invested;
-                      acc[broker].currentValue += currentVal;
-                      acc[broker].pnl += (currentVal - invested);
+                      acc.invested += invested;
+                      acc.currentValue += currentVal;
+                      acc.pnl += (currentVal - invested);
                       
                       if (h.day_change_absolute != null) {
-                        acc[broker].dayChange += (h.day_change_absolute * multiplier);
-                        acc[broker].prevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
+                        acc.dayChange += (h.day_change_absolute * multiplier);
+                        acc.prevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
                       }
                       
                       if (h.xirr != null) {
-                        acc[broker].weightedXirrSum += (h.xirr * invested);
-                        acc[broker].investedWithXirr += invested;
+                        acc.weightedXirrSum += (h.xirr * invested);
+                        acc.investedWithXirr += invested;
                       }
                       return acc;
-                    }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number, currentValue: number }>)
-                  ).map(([broker, data]) => {
+                    }, { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0, currentValue: 0 });
+                    
                     const pnlPercent = data.invested > 0 ? (data.pnl / data.invested) * 100 : 0;
-                    const brokerXirr = data.investedWithXirr > 0 ? (data.weightedXirrSum / data.investedWithXirr) : null;
+                    const stocksXirr = data.investedWithXirr > 0 ? (data.weightedXirrSum / data.investedWithXirr) : null;
                     const dayChangePercent = data.prevCloseValue > 0 ? (data.dayChange / data.prevCloseValue) * 100 : 0;
+                    
                     return (
-                    <div key={broker} className="flex flex-col gap-1 border-b border-slate-800/50 pb-3 pt-1 last:border-0 last:pb-0">
+                    <div className="flex flex-col gap-1 border-b border-slate-800/50 pb-3 pt-1 last:border-0 last:pb-0">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="capitalize text-slate-400">{broker === "rsu" ? "RSU" : broker}</span>
+                        <span className="capitalize text-slate-400">All Stocks</span>
                         <div className="flex items-center gap-2">
                           <span className={`tabular-nums font-medium ${data.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                             {data.pnl >= 0 ? "+" : ""}₹{Math.abs(data.pnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
@@ -178,14 +176,14 @@ export default function PerformancePage() {
                             </span>
                           </span>
                         </div>
-                        {brokerXirr !== null && (
-                          <span>XIRR: <span className={`${brokerXirr >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
-                            {brokerXirr >= 0 ? "+" : ""}{brokerXirr.toFixed(2)}%
+                        {stocksXirr !== null && (
+                          <span>XIRR: <span className={`${stocksXirr >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
+                            {stocksXirr >= 0 ? "+" : ""}{stocksXirr.toFixed(2)}%
                           </span></span>
                         )}
                       </div>
                     </div>
-                  )})}
+                  )})()}
                 </div>
               </div>
             )}
