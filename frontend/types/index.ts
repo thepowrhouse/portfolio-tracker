@@ -28,7 +28,15 @@ export interface OtherAsset {
   name: string;
   value: number;
   currency: string;
+  invested_value?: number | null;
+  investment_date?: string | null;
+  previous_value?: number | null;
   last_updated: string;
+  pnl_absolute?: number | null;
+  pnl_percent?: number | null;
+  day_change_absolute?: number | null;
+  day_change_percent?: number | null;
+  xirr?: number | null;
 }
 
 export interface PortfolioState {

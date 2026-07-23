@@ -30,7 +30,7 @@ export default function OtherAssetsPage() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<OtherAsset | null>(null);
-  const [formData, setFormData] = useState({ name: "", value: "", currency: "INR", category: "gold" as OtherAssetCategory });
+  const [formData, setFormData] = useState({ name: "", value: "", currency: "INR", category: "gold" as OtherAssetCategory, invested_value: "", investment_date: "" });
 
   const formatCurrency = (val: number, curr: string) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: curr, maximumFractionDigits: 0 }).format(val);
@@ -52,10 +52,17 @@ export default function OtherAssetsPage() {
   const handleOpenModal = (category: OtherAssetCategory, asset?: OtherAsset) => {
     if (asset) {
       setEditingAsset(asset);
-      setFormData({ name: asset.name, value: asset.value.toString(), currency: asset.currency, category: asset.category });
+      setFormData({ 
+        name: asset.name, 
+        value: asset.value.toString(), 
+        currency: asset.currency, 
+        category: asset.category,
+        invested_value: asset.invested_value ? asset.invested_value.toString() : "",
+        investment_date: asset.investment_date || ""
+      });
     } else {
       setEditingAsset(null);
-      setFormData({ name: "", value: "", currency: "INR", category });
+      setFormData({ name: "", value: "", currency: "INR", category, invested_value: "", investment_date: "" });
     }
     setIsModalOpen(true);
   };
@@ -66,7 +73,9 @@ export default function OtherAssetsPage() {
         name: formData.name,
         value: parseFloat(formData.value),
         currency: formData.currency,
-        category: formData.category
+        category: formData.category,
+        invested_value: formData.invested_value ? parseFloat(formData.invested_value) : null,
+        investment_date: formData.investment_date || null
       };
       if (editingAsset) {
         await updateOtherAsset(editingAsset.id, payload);
@@ -156,6 +165,10 @@ export default function OtherAssetsPage() {
                       <tr>
                         <th className="px-6 py-3 font-medium text-slate-300">Name</th>
                         <th className="px-6 py-3 font-medium text-slate-300">Value</th>
+                        <th className="px-6 py-3 font-medium text-slate-300">Invested</th>
+                        <th className="px-6 py-3 font-medium text-slate-300">P&L</th>
+                        <th className="px-6 py-3 font-medium text-slate-300">1D Gain</th>
+                        <th className="px-6 py-3 font-medium text-slate-300">XIRR</th>
                         <th className="px-6 py-3 font-medium text-slate-300 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -163,7 +176,31 @@ export default function OtherAssetsPage() {
                       {assetsByCategory.get(activeCategory)?.map(asset => (
                         <tr key={asset.id} className="hover:bg-slate-800/20 transition-colors">
                           <td className="px-6 py-4 font-medium text-slate-200">{asset.name}</td>
-                          <td className="px-6 py-4">{formatCurrency(asset.value, asset.currency)}</td>
+                          <td className="px-6 py-4 font-medium text-slate-100">{formatCurrency(asset.value, asset.currency)}</td>
+                          <td className="px-6 py-4">{asset.invested_value ? formatCurrency(asset.invested_value, asset.currency) : "-"}</td>
+                          <td className="px-6 py-4">
+                            {asset.pnl_absolute != null ? (
+                              <span className={asset.pnl_absolute >= 0 ? "text-emerald-400" : "text-red-400"}>
+                                {asset.pnl_absolute >= 0 ? "+" : ""}{formatCurrency(asset.pnl_absolute, asset.currency)} 
+                                <span className="text-xs opacity-70 ml-1">({asset.pnl_absolute >= 0 ? "+" : ""}{asset.pnl_percent?.toFixed(2)}%)</span>
+                              </span>
+                            ) : "-"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {asset.day_change_absolute != null ? (
+                              <span className={asset.day_change_absolute >= 0 ? "text-emerald-400" : "text-red-400"}>
+                                {asset.day_change_absolute >= 0 ? "+" : ""}{formatCurrency(asset.day_change_absolute, asset.currency)} 
+                                <span className="text-xs opacity-70 ml-1">({asset.day_change_absolute >= 0 ? "+" : ""}{asset.day_change_percent?.toFixed(2)}%)</span>
+                              </span>
+                            ) : "-"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {asset.xirr != null ? (
+                              <span className={asset.xirr >= 0 ? "text-emerald-400" : "text-red-400"}>
+                                {asset.xirr >= 0 ? "+" : ""}{asset.xirr.toFixed(2)}%
+                              </span>
+                            ) : "-"}
+                          </td>
                           <td className="px-6 py-4 text-right">
                             <button onClick={() => handleOpenModal(activeCategory, asset)} className="text-slate-400 hover:text-blue-400 p-1 inline-flex">
                               <Edit2 className="h-4 w-4" />
@@ -253,7 +290,28 @@ export default function OtherAssetsPage() {
               </div>
               <div className="flex space-x-4">
                 <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium text-slate-400">Value</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-400">Invested Value (Optional)</label>
+                  <input
+                    type="number"
+                    value={formData.invested_value}
+                    placeholder="0.00"
+                    onChange={(e) => setFormData({ ...formData, invested_value: e.target.value })}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2.5 text-sm text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-slate-400">Investment Date</label>
+                  <input
+                    type="date"
+                    value={formData.investment_date}
+                    onChange={(e) => setFormData({ ...formData, investment_date: e.target.value })}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2.5 text-sm text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-slate-400">Current Value</label>
                   <input
                     type="number"
                     value={formData.value}

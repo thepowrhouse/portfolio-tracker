@@ -42,6 +42,17 @@ export const api = {
     return res.json();
   },
 
+  async put<T>(path: string, body: unknown): Promise<T> {
+    const headers = await getHeaders({ "Content-Type": "application/json" });
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new APIError(res.status, await res.text());
+    return res.json();
+  },
+
   async postForm<T>(path: string, formData: FormData): Promise<T> {
     const headers = await getHeaders();
     const res = await fetch(`${API_BASE}${path}`, {

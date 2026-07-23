@@ -34,6 +34,24 @@ export function NetWorthCard() {
     }
   });
   
+  portfolio?.other_assets.forEach((a) => {
+    const multiplier = a.currency === "USD" ? usdRate : 1;
+    const invested = (a.invested_value || a.value) * multiplier;
+    totalInvestment += invested;
+    
+    if (a.day_change_absolute != null) {
+      totalDayChange += (a.day_change_absolute * multiplier);
+      const currentVal = a.value * multiplier;
+      totalPrevCloseValue += (currentVal - (a.day_change_absolute * multiplier));
+    }
+    
+    if (a.xirr != null && a.invested_value) {
+      const realInvested = a.invested_value * multiplier;
+      weightedXirrSum += (a.xirr * realInvested);
+      investedWithXirr += realInvested;
+    }
+  });
+  
   totalPnl = netWorth - totalInvestment;
   const totalPnlPercent = totalInvestment > 0 ? (totalPnl / totalInvestment) * 100 : 0;
   const portfolioXirr = investedWithXirr > 0 ? (weightedXirrSum / investedWithXirr) : null;
@@ -156,6 +174,75 @@ export function NetWorthCard() {
                   {brokerXirr !== null && (
                     <span>XIRR: <span className={`${brokerXirr >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
                       {brokerXirr >= 0 ? "+" : ""}{brokerXirr.toFixed(2)}%
+                    </span></span>
+                  )}
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+      )}
+
+      {portfolio && portfolio.other_assets.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-800">
+          <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">P&L by Other Assets</div>
+          <div className="space-y-2">
+            {Object.entries(
+              portfolio.other_assets.reduce((acc, a) => {
+                const category = a.category.replace('_', ' ');
+                if (!acc[category]) acc[category] = { invested: 0, pnl: 0, weightedXirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0, currentValue: 0 };
+                
+                const multiplier = a.currency === "USD" ? usdRate : 1;
+                const invested = (a.invested_value || a.value) * multiplier;
+                const currentVal = a.value * multiplier;
+                
+                acc[category].invested += invested;
+                acc[category].currentValue += currentVal;
+                acc[category].pnl += (currentVal - invested);
+                
+                if (a.day_change_absolute != null) {
+                  acc[category].dayChange += (a.day_change_absolute * multiplier);
+                  acc[category].prevCloseValue += (currentVal - (a.day_change_absolute * multiplier));
+                }
+                
+                if (a.xirr != null && a.invested_value) {
+                  const realInvested = a.invested_value * multiplier;
+                  acc[category].weightedXirrSum += (a.xirr * realInvested);
+                  acc[category].investedWithXirr += realInvested;
+                }
+                return acc;
+              }, {} as Record<string, { invested: number, pnl: number, weightedXirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number, currentValue: number }>)
+            ).map(([category, data]) => {
+              const pnlPercent = data.invested > 0 ? (data.pnl / data.invested) * 100 : 0;
+              const catXirr = data.investedWithXirr > 0 ? (data.weightedXirrSum / data.investedWithXirr) : null;
+              const dayChangePercent = data.prevCloseValue > 0 ? (data.dayChange / data.prevCloseValue) * 100 : 0;
+              return (
+              <div key={category} className="flex flex-col gap-1 border-b border-slate-800/50 pb-3 pt-1 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="capitalize text-slate-400">{category}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`tabular-nums font-medium ${data.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      {data.pnl >= 0 ? "+" : ""}₹{Math.abs(data.pnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className={`tabular-nums text-xs ${data.pnl >= 0 ? "text-emerald-500/70" : "text-red-500/70"}`}>
+                      ({data.pnl >= 0 ? "+" : ""}{pnlPercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-start justify-between text-xs text-slate-500 mt-1">
+                  <div className="flex flex-col gap-1.5">
+                    <span>Invested: ₹{Math.round(data.invested).toLocaleString("en-IN")}</span>
+                    <span>Current: <span className="text-slate-300">₹{Math.round(data.currentValue).toLocaleString("en-IN")}</span></span>
+                    <span className="flex items-center gap-1">
+                      1D Change: 
+                      <span className={`${data.dayChange >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
+                        {data.dayChange >= 0 ? "+" : ""}₹{Math.abs(Math.round(data.dayChange)).toLocaleString("en-IN")} ({data.dayChange >= 0 ? "+" : ""}{dayChangePercent.toFixed(2)}%)
+                      </span>
+                    </span>
+                  </div>
+                  {catXirr !== null && (
+                    <span>XIRR: <span className={`${catXirr >= 0 ? "text-emerald-400/80" : "text-red-400/80"}`}>
+                      {catXirr >= 0 ? "+" : ""}{catXirr.toFixed(2)}%
                     </span></span>
                   )}
                 </div>

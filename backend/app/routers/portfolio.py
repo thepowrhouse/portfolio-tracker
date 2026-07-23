@@ -205,6 +205,33 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
     other_assets = []
     for asset_dict in other_assets_data:
         asset = OtherAsset(**asset_dict)
+        
+        if asset.invested_value is not None and asset.invested_value > 0:
+            asset.pnl_absolute = asset.value - asset.invested_value
+            asset.pnl_percent = (asset.pnl_absolute / asset.invested_value) * 100
+            
+        if asset.previous_value is not None:
+            asset.day_change_absolute = asset.value - asset.previous_value
+            if asset.previous_value > 0:
+                asset.day_change_percent = (asset.day_change_absolute / asset.previous_value) * 100
+            else:
+                asset.day_change_percent = 0.0
+                
+        if asset.invested_value is not None and asset.investment_date is not None and asset.invested_value > 0:
+            try:
+                from app.utils.math_utils import calculate_xirr
+                from datetime import datetime
+                inv_date = datetime.fromisoformat(asset.investment_date)
+                cfs = [
+                    (inv_date, -asset.invested_value),
+                    (datetime.utcnow(), asset.value)
+                ]
+                xirr_rate = calculate_xirr(cfs)
+                if xirr_rate is not None:
+                    asset.xirr = round(xirr_rate * 100, 2)
+            except Exception as e:
+                print(f"Error calculating XIRR for {asset.name}: {e}")
+                
         other_assets.append(asset)
         val = asset.value
         if asset.currency == "USD":
@@ -395,7 +422,7 @@ async def reset_portfolio(email: str = Depends(verify_access)):
 async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verify_access)):
     from uuid import uuid4
     asset_id = str(uuid4())
-    add_other_asset(asset_id, email, asset.category.value, asset.name, asset.value, asset.currency)
+    add_other_asset(asset_id, email, asset.category.value, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
     return OtherAsset(
         id=asset_id,
         email=email,
@@ -403,12 +430,15 @@ async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verif
         name=asset.name,
         value=asset.value,
         currency=asset.currency,
+        invested_value=asset.invested_value,
+        investment_date=asset.investment_date,
+        previous_value=asset.value,
         last_updated=datetime.utcnow()
     )
 
 @router.put("/other-assets/{asset_id}", response_model=dict)
 async def modify_other_asset(asset_id: str, asset: OtherAssetUpdate, email: str = Depends(verify_access)):
-    update_other_asset(asset_id, email, asset.name, asset.value, asset.currency)
+    update_other_asset(asset_id, email, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
     return {"message": "Asset updated successfully"}
 
 @router.delete("/other-assets/{asset_id}")

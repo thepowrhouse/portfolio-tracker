@@ -95,18 +95,30 @@ class OtherAsset(BaseModel):
     name: str
     value: float
     currency: str
+    invested_value: Optional[float] = None
+    investment_date: Optional[str] = None
+    previous_value: Optional[float] = None
     last_updated: datetime = Field(default_factory=datetime.utcnow)
+    pnl_absolute: Optional[float] = None
+    pnl_percent: Optional[float] = None
+    day_change_absolute: Optional[float] = None
+    day_change_percent: Optional[float] = None
+    xirr: Optional[float] = None
 
 class OtherAssetCreate(BaseModel):
     category: OtherAssetCategory
     name: str
     value: float
     currency: str
+    invested_value: Optional[float] = None
+    investment_date: Optional[str] = None
 
 class OtherAssetUpdate(BaseModel):
     name: Optional[str] = None
     value: Optional[float] = None
     currency: Optional[str] = None
+    invested_value: Optional[float] = None
+    investment_date: Optional[str] = None
 
 class PortfolioState(BaseModel):
     holdings: List[PortfolioHolding]

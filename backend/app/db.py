@@ -55,6 +55,9 @@ def init_db():
             name TEXT NOT NULL,
             value REAL NOT NULL,
             currency TEXT NOT NULL,
+            invested_value REAL,
+            investment_date TEXT,
+            previous_value REAL,
             last_updated TEXT NOT NULL
         )
     """)
@@ -83,6 +86,20 @@ def init_db():
         pass
     try:
         cursor.execute("ALTER TABLE user_logins ADD COLUMN ip_address TEXT")
+    except sqlite3.OperationalError:
+        pass
+    
+    # Try adding new columns to other_assets
+    try:
+        cursor.execute("ALTER TABLE other_assets ADD COLUMN invested_value REAL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE other_assets ADD COLUMN investment_date TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        cursor.execute("ALTER TABLE other_assets ADD COLUMN previous_value REAL")
     except sqlite3.OperationalError:
         pass
     
@@ -207,12 +224,12 @@ def get_all_user_access() -> List[Dict[str, Any]]:
 
 # ==================== Other Assets CRUD ====================
 
-def add_other_asset(asset_id: str, email: str, category: str, name: str, value: float, currency: str):
+def add_other_asset(asset_id: str, email: str, category: str, name: str, value: float, currency: str, invested_value: float = None, investment_date: str = None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO other_assets (id, email, category, name, value, currency, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (asset_id, email, category, name, value, currency, datetime.utcnow().isoformat())
+        "INSERT INTO other_assets (id, email, category, name, value, currency, invested_value, investment_date, previous_value, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (asset_id, email, category, name, value, currency, invested_value, investment_date, value, datetime.utcnow().isoformat())
     )
     conn.commit()
     conn.close()
@@ -226,9 +243,14 @@ def get_other_assets(email: str) -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
-def update_other_asset(asset_id: str, email: str, name: str = None, value: float = None, currency: str = None):
+def update_other_asset(asset_id: str, email: str, name: str = None, value: float = None, currency: str = None, invested_value: float = None, investment_date: str = None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
+    # Get old value for previous_value tracking
+    cursor.execute("SELECT value FROM other_assets WHERE id = ? AND email = ?", (asset_id, email))
+    row = cursor.fetchone()
+    old_value = row[0] if row else None
     
     updates = []
     params = []
@@ -237,11 +259,19 @@ def update_other_asset(asset_id: str, email: str, name: str = None, value: float
         updates.append("name = ?")
         params.append(name)
     if value is not None:
+        updates.append("previous_value = ?")
+        params.append(old_value)
         updates.append("value = ?")
         params.append(value)
     if currency is not None:
         updates.append("currency = ?")
         params.append(currency)
+    if invested_value is not None:
+        updates.append("invested_value = ?")
+        params.append(invested_value)
+    if investment_date is not None:
+        updates.append("investment_date = ?")
+        params.append(investment_date)
         
     if not updates:
         return
