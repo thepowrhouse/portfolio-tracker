@@ -1,14 +1,14 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from typing import List, Dict
 from collections import defaultdict
-from app.models import PortfolioState, PortfolioHolding, CSVHolding, BrokerType, AssetClass
+from app.models import PortfolioState, PortfolioHolding, CSVHolding, BrokerType, AssetClass, OtherAsset, OtherAssetCreate, OtherAssetUpdate
 from app.services.csv_parser import parse_csv_by_broker, CSVParseError
 from app.services.reconciler import reconcile_portfolio
 from app.services.technical import get_technical_analysis
 from app.services.fundamental import get_fundamental_analysis
 from app.services.sentiment import analyze_sentiment
 from app.services.recommender import generate_recommendation
-from app.db import log_upload, get_user_status
+from app.db import log_upload, get_user_status, add_other_asset, get_other_assets, update_other_asset, delete_other_asset
 import httpx
 import os
 import asyncio
@@ -200,9 +200,20 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
         if h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
             val *= _usd_to_inr
         net_worth += val
+        
+    other_assets_data = get_other_assets(email)
+    other_assets = []
+    for asset_dict in other_assets_data:
+        asset = OtherAsset(**asset_dict)
+        other_assets.append(asset)
+        val = asset.value
+        if asset.currency == "USD":
+            val *= rate
+        net_worth += val
     
     return PortfolioState(
         holdings=enriched,
+        other_assets=other_assets,
         net_worth_inr=round(net_worth, 2),
         net_worth_usd=round(net_worth / rate, 2),
         last_sync=datetime.utcnow(),
@@ -379,3 +390,28 @@ async def reset_portfolio(email: str = Depends(verify_access)):
     global _portfolio_db
     _portfolio_db[email].clear()
     return {"message": "Portfolio reset successfully"}
+
+@router.post("/other-assets", response_model=OtherAsset)
+async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verify_access)):
+    from uuid import uuid4
+    asset_id = str(uuid4())
+    add_other_asset(asset_id, email, asset.category.value, asset.name, asset.value, asset.currency)
+    return OtherAsset(
+        id=asset_id,
+        email=email,
+        category=asset.category,
+        name=asset.name,
+        value=asset.value,
+        currency=asset.currency,
+        last_updated=datetime.utcnow()
+    )
+
+@router.put("/other-assets/{asset_id}", response_model=dict)
+async def modify_other_asset(asset_id: str, asset: OtherAssetUpdate, email: str = Depends(verify_access)):
+    update_other_asset(asset_id, email, asset.name, asset.value, asset.currency)
+    return {"message": "Asset updated successfully"}
+
+@router.delete("/other-assets/{asset_id}")
+async def remove_other_asset(asset_id: str, email: str = Depends(verify_access)):
+    delete_other_asset(asset_id, email)
+    return {"message": "Asset deleted successfully"}

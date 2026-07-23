@@ -46,6 +46,19 @@ def init_db():
         )
     """)
     
+    # Create other_assets table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS other_assets (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            category TEXT NOT NULL,
+            name TEXT NOT NULL,
+            value REAL NOT NULL,
+            currency TEXT NOT NULL,
+            last_updated TEXT NOT NULL
+        )
+    """)
+    
     try:
         cursor.execute("ALTER TABLE user_access ADD COLUMN name TEXT")
     except sqlite3.OperationalError:
@@ -191,3 +204,61 @@ def get_all_user_access() -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+# ==================== Other Assets CRUD ====================
+
+def add_other_asset(asset_id: str, email: str, category: str, name: str, value: float, currency: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO other_assets (id, email, category, name, value, currency, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (asset_id, email, category, name, value, currency, datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def get_other_assets(email: str) -> List[Dict[str, Any]]:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM other_assets WHERE email = ? ORDER BY last_updated DESC", (email,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def update_other_asset(asset_id: str, email: str, name: str = None, value: float = None, currency: str = None):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    updates = []
+    params = []
+    
+    if name is not None:
+        updates.append("name = ?")
+        params.append(name)
+    if value is not None:
+        updates.append("value = ?")
+        params.append(value)
+    if currency is not None:
+        updates.append("currency = ?")
+        params.append(currency)
+        
+    if not updates:
+        return
+        
+    updates.append("last_updated = ?")
+    params.append(datetime.utcnow().isoformat())
+    
+    params.extend([asset_id, email])
+    
+    query = f"UPDATE other_assets SET {', '.join(updates)} WHERE id = ? AND email = ?"
+    cursor.execute(query, tuple(params))
+    conn.commit()
+    conn.close()
+
+def delete_other_asset(asset_id: str, email: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM other_assets WHERE id = ? AND email = ?", (asset_id, email))
+    conn.commit()
+    conn.close()

@@ -19,6 +19,9 @@ interface PortfolioContextType {
   deleteHolding: (id: string) => Promise<void>;
   resetPortfolio: () => Promise<void>;
   refreshCalendar: () => Promise<void>;
+  addOtherAsset: (asset: any) => Promise<void>;
+  updateOtherAsset: (id: string, asset: any) => Promise<void>;
+  deleteOtherAsset: (id: string) => Promise<void>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -147,6 +150,36 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const addOtherAsset = useCallback(async (asset: any) => {
+    try {
+      await api.post("/portfolio/other-assets", asset);
+      await refreshPortfolio();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add other asset");
+      throw err;
+    }
+  }, [refreshPortfolio]);
+
+  const updateOtherAsset = useCallback(async (id: string, asset: any) => {
+    try {
+      await api.put(`/portfolio/other-assets/${id}`, asset);
+      await refreshPortfolio();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update other asset");
+      throw err;
+    }
+  }, [refreshPortfolio]);
+
+  const deleteOtherAsset = useCallback(async (id: string) => {
+    try {
+      await api.delete(`/portfolio/other-assets/${id}`);
+      await refreshPortfolio();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete other asset");
+      throw err;
+    }
+  }, [refreshPortfolio]);
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -164,6 +197,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         deleteHolding,
         resetPortfolio,
         refreshCalendar,
+        addOtherAsset,
+        updateOtherAsset,
+        deleteOtherAsset,
       }}
     >
       {children}

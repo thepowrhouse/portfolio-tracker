@@ -1,5 +1,6 @@
 export type BrokerType = "zerodha" | "groww" | "indmoney" | "angelone" | "rsu";
 export type AssetClass = "indian_equity" | "us_equity" | "rsu";
+export type OtherAssetCategory = "gold" | "real_estate" | "crypto" | "mutual_funds" | "epf" | "ppf" | "nps" | "bonds" | "vehicle" | "fixed_income" | "esop_rsu";
 export type Recommendation = "BUY" | "HOLD" | "SELL";
 export type SentimentGrade = "Bullish" | "Neutral" | "Bearish";
 
@@ -20,8 +21,19 @@ export interface PortfolioHolding {
   xirr?: number | null;
 }
 
+export interface OtherAsset {
+  id: string;
+  email: string;
+  category: OtherAssetCategory;
+  name: string;
+  value: number;
+  currency: string;
+  last_updated: string;
+}
+
 export interface PortfolioState {
   holdings: PortfolioHolding[];
+  other_assets: OtherAsset[];
   net_worth_inr: number;
   net_worth_usd: number;
   last_sync: string;

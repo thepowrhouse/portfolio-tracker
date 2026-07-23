@@ -15,6 +15,19 @@ class AssetClass(str, Enum):
     US_EQUITY = "us_equity"
     RSU = "rsu"
 
+class OtherAssetCategory(str, Enum):
+    GOLD = "gold"
+    REAL_ESTATE = "real_estate"
+    CRYPTO = "crypto"
+    MUTUAL_FUNDS = "mutual_funds"
+    EPF = "epf"
+    PPF = "ppf"
+    NPS = "nps"
+    BONDS = "bonds"
+    VEHICLE = "vehicle"
+    FIXED_INCOME = "fixed_income"
+    ESOP_RSU = "esop_rsu"
+
 class Recommendation(str, Enum):
     BUY = "BUY"
     HOLD = "HOLD"
@@ -75,8 +88,29 @@ class PortfolioHolding(BaseModel):
     xirr: Optional[float] = None
     cashflows: Optional[List[CashFlow]] = None
 
+class OtherAsset(BaseModel):
+    id: str
+    email: str
+    category: OtherAssetCategory
+    name: str
+    value: float
+    currency: str
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+class OtherAssetCreate(BaseModel):
+    category: OtherAssetCategory
+    name: str
+    value: float
+    currency: str
+
+class OtherAssetUpdate(BaseModel):
+    name: Optional[str] = None
+    value: Optional[float] = None
+    currency: Optional[str] = None
+
 class PortfolioState(BaseModel):
     holdings: List[PortfolioHolding]
+    other_assets: List[OtherAsset] = Field(default_factory=list)
     net_worth_inr: float
     net_worth_usd: float
     last_sync: datetime
