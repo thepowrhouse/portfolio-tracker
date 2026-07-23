@@ -209,13 +209,6 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
         if asset.invested_value is not None and asset.invested_value > 0:
             asset.pnl_absolute = asset.value - asset.invested_value
             asset.pnl_percent = (asset.pnl_absolute / asset.invested_value) * 100
-            
-        if asset.previous_value is not None:
-            asset.day_change_absolute = asset.value - asset.previous_value
-            if asset.previous_value > 0:
-                asset.day_change_percent = (asset.day_change_absolute / asset.previous_value) * 100
-            else:
-                asset.day_change_percent = 0.0
                 
         if asset.invested_value is not None and asset.investment_date is not None and asset.invested_value > 0:
             try:

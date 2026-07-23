@@ -167,7 +167,6 @@ export default function OtherAssetsPage() {
                         <th className="px-6 py-3 font-medium text-slate-300">Value</th>
                         <th className="px-6 py-3 font-medium text-slate-300">Invested</th>
                         <th className="px-6 py-3 font-medium text-slate-300">P&L</th>
-                        <th className="px-6 py-3 font-medium text-slate-300">1D Gain</th>
                         <th className="px-6 py-3 font-medium text-slate-300">XIRR</th>
                         <th className="px-6 py-3 font-medium text-slate-300 text-right">Actions</th>
                       </tr>
@@ -183,14 +182,6 @@ export default function OtherAssetsPage() {
                               <span className={asset.pnl_absolute >= 0 ? "text-emerald-400" : "text-red-400"}>
                                 {asset.pnl_absolute >= 0 ? "+" : ""}{formatCurrency(asset.pnl_absolute, asset.currency)} 
                                 <span className="text-xs opacity-70 ml-1">({asset.pnl_absolute >= 0 ? "+" : ""}{asset.pnl_percent?.toFixed(2)}%)</span>
-                              </span>
-                            ) : "-"}
-                          </td>
-                          <td className="px-6 py-4">
-                            {asset.day_change_absolute != null ? (
-                              <span className={asset.day_change_absolute >= 0 ? "text-emerald-400" : "text-red-400"}>
-                                {asset.day_change_absolute >= 0 ? "+" : ""}{formatCurrency(asset.day_change_absolute, asset.currency)} 
-                                <span className="text-xs opacity-70 ml-1">({asset.day_change_absolute >= 0 ? "+" : ""}{asset.day_change_percent?.toFixed(2)}%)</span>
                               </span>
                             ) : "-"}
                           </td>
