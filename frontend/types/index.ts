@@ -56,6 +56,12 @@ export interface TechnicalIndicators {
   chart_pattern?: string | null;
   obv_trend?: "accumulation" | "distribution" | null;
   vwap_20?: number | null;
+  adx?: number | null;
+  adx_di_plus?: number | null;
+  adx_di_minus?: number | null;
+  williams_r?: number | null;
+  stoch_k?: number | null;
+  obv_value_formatted?: string | null;
 }
 
 export interface FundamentalMetrics {

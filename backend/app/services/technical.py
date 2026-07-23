@@ -38,19 +38,68 @@ def compute_bollinger(prices: pd.Series, period: int = 20) -> tuple:
         pos = "mid"
     return round(upper.iloc[-1], 2), round(lower.iloc[-1], 2), pos
 
-def compute_obv(close: pd.Series, volume: pd.Series) -> Optional[str]:
+def compute_obv(close: pd.Series, volume: pd.Series, is_indian: bool) -> tuple[Optional[str], Optional[str]]:
     if len(close) < 20:
-        return None
+        return None, None
     # Calculate daily OBV
     obv = (np.sign(close.diff()) * volume).fillna(0).cumsum()
     # Check trend by comparing current OBV to its 20-day SMA
     obv_sma20 = obv.rolling(20).mean()
     if pd.isna(obv_sma20.iloc[-1]):
-        return None
-    if obv.iloc[-1] > obv_sma20.iloc[-1]:
-        return "accumulation"
+        return None, None
+    
+    trend = "accumulation" if obv.iloc[-1] > obv_sma20.iloc[-1] else "distribution"
+    val = obv.iloc[-1]
+    
+    if is_indian:
+        fmt_val = f"{val / 10000000:.2f} Cr"
     else:
-        return "distribution"
+        fmt_val = f"{val / 1000000:.2f} M"
+        
+    if val > 0:
+        fmt_val = "+" + fmt_val
+        
+    return trend, fmt_val
+
+def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> tuple[Optional[float], Optional[float], Optional[float]]:
+    if len(close) < period + 1:
+        return None, None, None
+    up = high.diff()
+    down = low.diff() * -1
+    pos_dm = np.where((up > down) & (up > 0), up, 0.0)
+    neg_dm = np.where((down > up) & (down > 0), down, 0.0)
+    
+    tr1 = high - low
+    tr2 = (high - close.shift()).abs()
+    tr3 = (low - close.shift()).abs()
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    
+    atr = tr.ewm(alpha=1/period, adjust=False).mean()
+    pos_di = 100 * (pd.Series(pos_dm, index=high.index).ewm(alpha=1/period, adjust=False).mean() / atr)
+    neg_di = 100 * (pd.Series(neg_dm, index=low.index).ewm(alpha=1/period, adjust=False).mean() / atr)
+    
+    dx = 100 * abs(pos_di - neg_di) / (pos_di + neg_di).replace(0, np.nan)
+    adx = dx.ewm(alpha=1/period, adjust=False).mean()
+    
+    if pd.isna(adx.iloc[-1]):
+        return None, None, None
+    return round(adx.iloc[-1], 2), round(pos_di.iloc[-1], 2), round(neg_di.iloc[-1], 2)
+
+def compute_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Optional[float]:
+    if len(close) < period:
+        return None
+    hh = high.rolling(window=period).max()
+    ll = low.rolling(window=period).min()
+    wr = -100 * (hh - close) / (hh - ll)
+    return round(wr.iloc[-1], 2) if not pd.isna(wr.iloc[-1]) else None
+
+def compute_stochastic_k(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> Optional[float]:
+    if len(close) < period:
+        return None
+    hh = high.rolling(window=period).max()
+    ll = low.rolling(window=period).min()
+    stoch_k = 100 * (close - ll) / (hh - ll)
+    return round(stoch_k.iloc[-1], 2) if not pd.isna(stoch_k.iloc[-1]) else None
 
 def compute_vwap(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series, period: int = 20) -> Optional[float]:
     if len(close) < period:
@@ -149,8 +198,13 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
             
             rsi = compute_rsi(close)
             macd, macd_signal = compute_macd(close)
-            obv_trend = compute_obv(close, volume)
+            is_indian = asset_class == "indian_equity"
+            obv_trend, obv_formatted = compute_obv(close, volume, is_indian)
             vwap_20 = compute_vwap(high, low, close, volume)
+            
+            adx, adx_di_plus, adx_di_minus = compute_adx(high, low, close)
+            williams_r = compute_williams_r(high, low, close)
+            stoch_k = compute_stochastic_k(high, low, close)
             
             # Weekly (W-FRI)
             close_weekly = close.resample('W-FRI').last().dropna()
@@ -222,7 +276,13 @@ def get_technical_analysis(ticker: str, asset_class: str) -> TechnicalIndicators
                 all_time_high=round(all_time_high, 2) if pd.notna(all_time_high) else None,
                 chart_pattern=chart_pattern,
                 obv_trend=obv_trend,
-                vwap_20=vwap_20
+                vwap_20=vwap_20,
+                adx=adx,
+                adx_di_plus=adx_di_plus,
+                adx_di_minus=adx_di_minus,
+                williams_r=williams_r,
+                stoch_k=stoch_k,
+                obv_value_formatted=obv_formatted
             )
             
         except Exception as e:

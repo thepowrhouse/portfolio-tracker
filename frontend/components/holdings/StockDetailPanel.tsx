@@ -100,6 +100,24 @@ export function StockDetailPanel({ recommendation, activeHorizon }: Props) {
                   ? (technical.obv_trend.charAt(0).toUpperCase() + technical.obv_trend.slice(1)) 
                   : null} 
               />
+              <MetricRow label="OBV Value" value={technical.obv_value_formatted ?? null} />
+            </div>
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-slate-800/50">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Advanced Scorecard</span>
+            <div className="pl-2 border-l border-slate-800/50">
+              <MetricRow label="ADX (Strength)" value={technical.adx ?? null} />
+              {(technical.adx_di_plus !== null && technical.adx_di_plus !== undefined) && (
+                <div className="flex justify-between py-1.5 border-b border-slate-800/50 last:border-0">
+                  <span className="text-xs text-slate-500 pl-2">+DI / -DI</span>
+                  <span className="text-xs font-medium tabular-nums text-slate-400">
+                    {technical.adx_di_plus} / {technical.adx_di_minus}
+                  </span>
+                </div>
+              )}
+              <MetricRow label="Williams %R" value={technical.williams_r ?? null} />
+              <MetricRow label="Stochastic %K" value={technical.stoch_k ?? null} />
             </div>
           </div>
         </div>

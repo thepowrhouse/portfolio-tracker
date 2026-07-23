@@ -3,16 +3,18 @@ Investment Recommender Engine.
 Combines Technical, Fundamental, and Sentiment into a BUY/HOLD/SELL verdict.
 """
 
-from typing import List
+from typing import List, Optional, Tuple
 from app.models import (
     TechnicalIndicators, FundamentalMetrics, SentimentAnalysis, QuantMetrics,
     Recommendation, StockRecommendation, VerdictRationale, HorizonVerdict
 )
 
-def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, List[str]]:
-    """Returns (score -1 to 1, rationale points) based on horizon: 'short', 'mid', 'long'"""
+def score_technical(tech: TechnicalIndicators, horizon: str) -> Tuple[float, List[str], Optional[Recommendation], Optional[str]]:
+    """Returns (score -1 to 1, rationale points, override_rec, override_summary) based on horizon"""
     points = []
     score = 0.0
+    override_rec = None
+    override_summary = None
     
     if horizon == "short":
         if tech.rsi_14_daily is not None:
@@ -46,10 +48,48 @@ def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, Lis
                 
         if tech.obv_trend == "accumulation":
             score += 0.2
-            points.append("On-Balance Volume (OBV) trend suggests institutional accumulation")
+            points.append(f"On-Balance Volume (OBV) trend suggests institutional accumulation ({tech.obv_value_formatted or ''})")
         elif tech.obv_trend == "distribution":
             score -= 0.2
-            points.append("On-Balance Volume (OBV) trend suggests institutional distribution")
+            points.append(f"On-Balance Volume (OBV) trend suggests institutional distribution ({tech.obv_value_formatted or ''})")
+
+        # ADVANCED TECHNICAL OVERLAY
+        if tech.adx is not None and tech.williams_r is not None and tech.stoch_k is not None:
+            has_strong_trend = tech.adx > 30
+            is_downtrend = (tech.adx_di_minus or 0) > (tech.adx_di_plus or 0)
+            is_uptrend = (tech.adx_di_plus or 0) > (tech.adx_di_minus or 0)
+            
+            if has_strong_trend and is_downtrend:
+                if tech.williams_r < -80 and tech.stoch_k < 20:
+                    score += 1.0 # Huge boost to prevent selling at bottom
+                    override_rec = Recommendation.HOLD
+                    override_summary = (
+                        f"ADX {tech.adx} means the downtrend is dominant and strong. "
+                        f"BUT Williams %R at {tech.williams_r} and Stochastic %K at {tech.stoch_k} "
+                        f"are extreme oversold readings. Historically, stocks at these levels bounce. "
+                        f"A technical bounce is highly likely. Do not sell here, this is a bottom zone."
+                    )
+                    points.append(f"Williams %R ({tech.williams_r}) and Stoch %K ({tech.stoch_k}) signal extreme oversold bottom")
+                else:
+                    points.append(f"ADX ({tech.adx}) confirms strong downtrend with -DI dominating")
+                    score -= 0.5
+                    
+            elif has_strong_trend and is_uptrend:
+                if tech.williams_r > -20 and tech.stoch_k > 80:
+                    score -= 1.0 # Huge drop to prevent buying at top
+                    override_rec = Recommendation.SELL
+                    override_summary = (
+                        f"ADX {tech.adx} confirms a strong uptrend, but Williams %R at {tech.williams_r} and "
+                        f"Stochastic %K at {tech.stoch_k} indicate the stock is extremely overbought. "
+                        f"The rally is likely exhausted and a correction is imminent. Consider booking profits."
+                    )
+                    points.append(f"Williams %R ({tech.williams_r}) and Stoch %K ({tech.stoch_k}) signal extreme overbought top")
+                else:
+                    points.append(f"ADX ({tech.adx}) confirms strong uptrend with +DI dominating")
+                    score += 0.5
+            else:
+                if tech.adx < 20:
+                    points.append(f"ADX ({tech.adx}) indicates weak trend or consolidation phase")
 
     elif horizon == "mid":
         if tech.rsi_14_weekly is not None:
@@ -102,7 +142,7 @@ def score_technical(tech: TechnicalIndicators, horizon: str) -> tuple[float, Lis
             score -= 0.2
             points.append("Long-term volume trends support bearish distribution phase")
 
-    return score, points
+    return score, points, override_rec, override_summary
 
 def score_fundamental(fund: FundamentalMetrics, horizon: str) -> tuple[float, List[str]]:
     """Returns (score -1 to 1, rationale points) based on horizon"""
@@ -214,7 +254,7 @@ def generate_recommendation(
     horizons = {}
     
     for horizon in ["short", "mid", "long"]:
-        tech_score, tech_points = score_technical(technical, horizon)
+        tech_score, tech_points, override_rec, override_summary = score_technical(technical, horizon)
         fund_score, fund_points = score_fundamental(fundamental, horizon)
         sent_score, sent_points = score_sentiment(sentiment, horizon)
         quant_score, quant_points = score_quant(quant, horizon)
@@ -223,15 +263,19 @@ def generate_recommendation(
         total_score = tech_score + fund_score + sent_score + quant_score
         
         # Map to recommendation
-        if total_score >= 0.5:
-            recommendation = Recommendation.BUY
-            confidence = min(95, 50 + total_score * 15)
-        elif total_score <= -0.5:
-            recommendation = Recommendation.SELL
-            confidence = min(95, 50 + abs(total_score) * 15)
+        if override_rec:
+            recommendation = override_rec
+            confidence = 85.0
         else:
-            recommendation = Recommendation.HOLD
-            confidence = 50 + abs(total_score) * 20
+            if total_score >= 0.5:
+                recommendation = Recommendation.BUY
+                confidence = min(95, 50 + total_score * 15)
+            elif total_score <= -0.5:
+                recommendation = Recommendation.SELL
+                confidence = min(95, 50 + abs(total_score) * 15)
+            else:
+                recommendation = Recommendation.HOLD
+                confidence = 50 + abs(total_score) * 20
         
         # Build rationale
         rationale = [
@@ -259,12 +303,15 @@ def generate_recommendation(
         bullish_text = ", ".join(bullish_pillars) if bullish_pillars else "no major bullish drivers"
         bearish_text = ", ".join(bearish_pillars) if bearish_pillars else "no major bearish drivers"
         
-        if recommendation == Recommendation.BUY:
-            summary = f"A {horizon}-term BUY is supported by {bullish_text}. The algorithmic assessment for {company_name} is positive overall, though it is slightly offset by {bearish_text}."
-        elif recommendation == Recommendation.SELL:
-            summary = f"A {horizon}-term SELL is triggered primarily due to {bearish_text}. Despite showing {bullish_text}, {company_name} carries too much aggregate downside risk at this level."
+        if override_summary:
+            summary = override_summary
         else:
-            summary = f"A {horizon}-term HOLD is recommended for {company_name} due to conflicting signals. We observe {bullish_text}, which is heavily offset by {bearish_text}."
+            if recommendation == Recommendation.BUY:
+                summary = f"A {horizon}-term BUY is supported by {bullish_text}. The algorithmic assessment for {company_name} is positive overall, though it is slightly offset by {bearish_text}."
+            elif recommendation == Recommendation.SELL:
+                summary = f"A {horizon}-term SELL is triggered primarily due to {bearish_text}. Despite showing {bullish_text}, {company_name} carries too much aggregate downside risk at this level."
+            else:
+                summary = f"A {horizon}-term HOLD is recommended for {company_name} due to conflicting signals. We observe {bullish_text}, which is heavily offset by {bearish_text}."
             
         # Determine trend for this horizon
         horizon_trend = "sideways"

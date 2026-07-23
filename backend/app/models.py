@@ -112,6 +112,12 @@ class TechnicalIndicators(BaseModel):
     chart_pattern: Optional[str] = None
     obv_trend: Optional[str] = None
     vwap_20: Optional[float] = None
+    adx: Optional[float] = None
+    adx_di_plus: Optional[float] = None
+    adx_di_minus: Optional[float] = None
+    williams_r: Optional[float] = None
+    stoch_k: Optional[float] = None
+    obv_value_formatted: Optional[str] = None
 
 class FundamentalMetrics(BaseModel):
     ticker: str
