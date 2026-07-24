@@ -42,7 +42,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await api.get<PortfolioState>(`/portfolio/state${force ? "?force=true" : ""}`);
+      const cacheBuster = force ? `&_t=${Date.now()}` : "";
+      const data = await api.get<PortfolioState>(`/portfolio/state${force ? "?force=true" : ""}${cacheBuster}`);
       setPortfolioState(data);
       setLastUpdated(Date.now());
     } catch (err) {

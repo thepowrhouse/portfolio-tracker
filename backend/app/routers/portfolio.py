@@ -26,6 +26,21 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
+@router.get("/debug")
+def debug_info():
+    import sqlite3
+    from app.db import DB_PATH
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    uploads = [dict(r) for r in c.execute("SELECT * FROM user_uploads ORDER BY timestamp DESC LIMIT 5").fetchall()]
+    return {
+        "db_keys": list(_portfolio_db.keys()),
+        "db_lens": {k: len(v) for k, v in _portfolio_db.items()},
+        "uploads": uploads
+    }
+
+
 # In-memory store for demo (use PostgreSQL in production)
 _portfolio_db: Dict[str, List[PortfolioHolding]] = defaultdict(list)
 _usd_to_inr: float = 83.5
@@ -204,6 +219,7 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
     
     # 1. Get uploaded holdings
     uploaded_holdings = _portfolio_db.get(email, [])
+    print(f"GET STATE DEBUG: email={email}, len(uploaded_holdings) from DB={len(uploaded_holdings)}")
     
     if not uploaded_holdings:
         import os
@@ -438,6 +454,8 @@ async def sync_portfolio(
     user_portfolio.clear()
     user_portfolio.extend(new_holdings)
     
+    print(f"SYNC DEBUG: parsed {len(csv_holdings)} from CSV. New holdings total: {len(new_holdings)}. user_portfolio len: {len(user_portfolio)}")
+    
     # Enrich with prices
     enriched = enrich_holdings(user_portfolio)
     
@@ -548,3 +566,33 @@ async def remove_other_asset(asset_id: str, email: str = Depends(verify_access))
         del _portfolio_cache[email]
         
     return {"message": "Asset deleted successfully"}
+
+@router.get("/debug/state")
+async def debug_state(email: str = Depends(verify_access)):
+    import os
+    uploads = []
+    if os.path.exists(UPLOAD_DIR):
+        uploads = os.listdir(UPLOAD_DIR)
+    
+    # Also fetch rows from sqlite
+    import sqlite3
+    from app.db import DB_PATH
+    db_rows = []
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute("SELECT broker, file_path, timestamp FROM user_uploads WHERE email = ? ORDER BY timestamp DESC", (email,))
+        db_rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+    except Exception as e:
+        db_rows = [{"error": str(e)}]
+        
+    return {
+        "email": email,
+        "portfolio_db_len": len(_portfolio_db.get(email, [])),
+        "portfolio_db": _portfolio_db.get(email, []),
+        "cache_keys": list(_portfolio_cache.keys()),
+        "uploads_dir": uploads,
+        "db_rows": db_rows
+    }
