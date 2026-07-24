@@ -49,3 +49,4 @@ transformers
 watchfiles==1.2.0
 websockets==16.0
 yfinance==1.5.1
+PyJWT

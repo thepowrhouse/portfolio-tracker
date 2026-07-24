@@ -1,8 +1,6 @@
 import { getSession } from "next-auth/react";
 
-const API_BASE = typeof window !== "undefined" 
-  ? "/api/backend" 
-  : (process.env.API_URL || "http://backend:8000").replace(/\/+$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || "http://localhost:8000").replace(/\/+$/, "");
 
 export class APIError extends Error {
   constructor(public status: number, message: string) {
@@ -13,7 +11,11 @@ export class APIError extends Error {
 async function getHeaders(customHeaders: Record<string, string> = {}) {
   const session = await getSession();
   const headers: Record<string, string> = { ...customHeaders };
-  // X-User-Email is now injected securely by the Next.js API Proxy!
+  
+  if (session && (session as any).backendToken) {
+    headers["Authorization"] = `Bearer ${(session as any).backendToken}`;
+  }
+  
   if (typeof window !== "undefined") {
     if (!sessionStorage.getItem("sessionId")) {
       sessionStorage.setItem("sessionId", Math.random().toString(36).substring(2, 10));

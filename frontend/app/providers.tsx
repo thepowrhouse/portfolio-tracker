@@ -24,7 +24,7 @@ function ActivityTracker() {
       fetch(`${apiUrl}/activity/login`, {
         method: "POST",
         headers: {
-          "x-user-email": session.user.email,
+          "Authorization": `Bearer ${(session as any).backendToken}`,
           "x-session-id": sessionId
         }
       }).catch(() => {});

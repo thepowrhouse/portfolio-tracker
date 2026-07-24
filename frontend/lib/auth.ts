@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import jwt from "jsonwebtoken";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -33,13 +34,16 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.email = token.email || session.user.email;
+        session.user.email = token.email as string || session.user.email;
+        (session as any).backendToken = token.backendToken;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
         token.email = user.email;
+        const secret = process.env.JWT_SECRET || "fallback_secret_123";
+        token.backendToken = jwt.sign({ email: user.email }, secret, { algorithm: "HS256" });
       }
       return token;
     },

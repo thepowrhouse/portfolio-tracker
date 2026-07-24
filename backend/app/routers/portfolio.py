@@ -1,3 +1,5 @@
+import jwt
+
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from typing import List, Dict
 from collections import defaultdict
@@ -48,8 +50,24 @@ async def get_forex_rate() -> float:
         pass
     return _usd_to_inr
 
-def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
-    return x_user_email
+def get_user_email(authorization: str = Header(None)) -> str:
+    """Extract email from JWT Bearer token"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    token = authorization.split(" ")[1]
+    secret = os.getenv("JWT_SECRET", "fallback_secret_123")
+    
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        email = payload.get("email")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+        return email
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 def verify_access(email: str = Depends(get_user_email)) -> str:
     if not email or email == "anonymous":
@@ -59,7 +77,8 @@ def verify_access(email: str = Depends(get_user_email)) -> str:
     if status == "blacklisted":
         raise HTTPException(status_code=403, detail="Account is blacklisted")
     if status != "approved":
-        raise HTTPException(status_code=403, detail="Account is not approved")
+        raise HTTPException(status_code=403, detail="Account pending approval")
+        
     return email
 
 def get_session_id(x_session_id: str = Header(default=None)) -> str:

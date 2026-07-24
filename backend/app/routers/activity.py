@@ -3,8 +3,7 @@ from app.db import log_login
 
 router = APIRouter(prefix="/activity", tags=["activity"])
 
-def get_user_email(x_user_email: str = Header(default="anonymous")) -> str:
-    return x_user_email
+from app.routers.portfolio import get_user_email
 
 def get_session_id(x_session_id: str = Header(default=None)) -> str:
     return x_session_id
