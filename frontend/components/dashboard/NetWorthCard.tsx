@@ -158,12 +158,13 @@ export function NetWorthCard() {
                   </div>
                   <div className="flex items-start justify-between text-xs text-slate-400 mt-2 bg-slate-900/30 p-2 rounded-lg">
                     <div className="flex flex-col gap-1.5">
-                      <span className="flex justify-between w-32"><span>Invested:</span> <span className="font-medium text-slate-300">₹{Math.round(data.invested).toLocaleString("en-IN")}</span></span>
-                      <span className="flex justify-between w-32"><span>Current:</span> <span className="font-bold text-white drop-shadow-sm">₹{Math.round(data.currentValue).toLocaleString("en-IN")}</span></span>
-                      <span className="flex justify-between w-32 border-t border-slate-800/50 pt-1 mt-0.5">
+                      <span className="flex justify-between gap-4"><span>Invested:</span> <span className="font-medium text-slate-300">₹{Math.round(data.invested).toLocaleString("en-IN")}</span></span>
+                      <span className="flex justify-between gap-4"><span>Current:</span> <span className="font-bold text-white drop-shadow-sm">₹{Math.round(data.currentValue).toLocaleString("en-IN")}</span></span>
+                      <span className="flex justify-between gap-4 border-t border-slate-800/50 pt-1 mt-0.5">
                         <span>1D:</span>
                         <span className={`font-medium ${data.dayChange >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                           {data.dayChange >= 0 ? "+" : ""}₹{Math.abs(Math.round(data.dayChange)).toLocaleString("en-IN")}
+                          <span className="text-[10px] opacity-80 ml-1">({data.dayChange >= 0 ? "+" : ""}{dayChangePercent.toFixed(2)}%)</span>
                         </span>
                       </span>
                     </div>
