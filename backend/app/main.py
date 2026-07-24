@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import portfolio, analysis, sectors, admin, activity, calendar
+from app.routers import portfolio, analysis, sectors, admin, activity, calendar, retirement
 from app.db import init_db
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(sectors.router)
 app.include_router(admin.router)
 app.include_router(activity.router)
 app.include_router(calendar.router)
+app.include_router(retirement.router)
 
 @app.on_event("startup")
 def startup_event():

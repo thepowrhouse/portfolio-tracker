@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LineChart, Wallet, LayoutDashboard, PieChart, ReceiptText } from "lucide-react";
+import { LineChart, Wallet, LayoutDashboard, PieChart, ReceiptText, Palmtree, TrendingUp } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
 
-  const navItems = [
+    {
+      name: "Performance",
+      href: "/dashboard/performance",
+      icon: TrendingUp,
+      exact: true
+    },
     {
       name: "Stocks",
       href: "/dashboard",
@@ -21,9 +26,9 @@ export function Sidebar() {
       exact: false
     },
     {
-      name: "Performance",
-      href: "/dashboard/performance",
-      icon: PieChart,
+      name: "Retirement",
+      href: "/dashboard/retirement",
+      icon: Palmtree,
       exact: false
     },
     {

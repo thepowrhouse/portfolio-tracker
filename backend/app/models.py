@@ -223,3 +223,18 @@ class StockRecommendation(BaseModel):
     sentiment: SentimentAnalysis
     quant: Optional[QuantMetrics] = None
     horizons: dict[str, HorizonVerdict]
+
+# ==================== Retirement Models ====================
+
+class WithdrawalBucket(BaseModel):
+    bucket_name: str
+    priority: int
+    description: str
+    assets: List[dict]  # Contains name, category, and value
+
+class RetirementPlan(BaseModel):
+    total_corpus: float
+    target_corpus: float
+    estimated_monthly_passive_income: float
+    withdrawal_strategy: List[WithdrawalBucket]
+    recommendations: List[str]
