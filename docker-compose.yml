@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
+      - ./uploads:/app/uploads
     environment:
       - SQLITE_DB_PATH=/app/data/activity.db
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
