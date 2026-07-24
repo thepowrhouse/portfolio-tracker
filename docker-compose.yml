@@ -15,6 +15,7 @@ services:
       - SQLITE_DB_PATH=/app/data/activity.db
       - UPLOAD_DIR=/app/uploads
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
 
   frontend:
     build:
@@ -34,5 +35,6 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
       # The frontend server container can reach the backend container directly
       - API_URL=http://backend:8000
