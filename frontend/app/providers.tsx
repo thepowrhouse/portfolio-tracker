@@ -10,7 +10,7 @@ function ActivityTracker() {
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email && !trackedRef.current) {
       trackedRef.current = true;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiUrl = "/api/backend";
       
       let sessionId = sessionStorage.getItem("sessionId");
       let sessionEmail = sessionStorage.getItem("sessionEmail");
@@ -24,7 +24,7 @@ function ActivityTracker() {
       fetch(`${apiUrl}/activity/login`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${(session as any).backendToken}`,
+          "x-user-email": session.user.email,
           "x-session-id": sessionId
         }
       }).catch(() => {});
