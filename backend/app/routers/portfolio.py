@@ -184,7 +184,6 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             # Compute XIRR if cashflows are available
             if getattr(h, 'cashflows', None) and len(h.cashflows) > 0 and h.quantity > 0:
                 from app.utils.math_utils import calculate_xirr
-                from datetime import datetime
                 
                 # Copy cashflows to avoid mutating the original DB record
                 cfs = [(cf.date, cf.amount) for cf in h.cashflows]
@@ -310,7 +309,6 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
         if asset.invested_value is not None and asset.investment_date is not None and asset.invested_value > 0:
             try:
                 from app.utils.math_utils import calculate_xirr
-                from datetime import datetime
                 inv_date = datetime.fromisoformat(asset.investment_date)
                 cfs = [
                     (inv_date, -asset.invested_value),
