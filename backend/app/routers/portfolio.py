@@ -249,6 +249,11 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
                     if is_history and broker_str not in latest_tradebook:
                         latest_tradebook[broker_str] = csv_holdings
                     elif not is_history and broker_str not in latest_snapshot:
+                        # Convert INDmoney INR prices to USD
+                        for h in csv_holdings:
+                            if h.broker == BrokerType.INDMONEY and h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
+                                if _usd_to_inr > 0:
+                                    h.avg_price = round(h.avg_price / _usd_to_inr, 4)
                         latest_snapshot[broker_str] = csv_holdings
                 except Exception as e:
                     print(f"Failed to parse cached file for {broker_str}: {e}")

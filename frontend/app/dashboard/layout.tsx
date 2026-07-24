@@ -66,7 +66,7 @@ function LoginScreen() {
               </div>
             )}
             <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl: "/dashboard/performance" })}
               className="group relative flex w-full justify-center rounded-xl bg-white px-4 py-3.5 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
             >
               <span className="absolute inset-y-0 left-0 flex items-center pl-4">

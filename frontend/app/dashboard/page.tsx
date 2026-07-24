@@ -34,27 +34,27 @@ function DashboardContent() {
 
         <div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-2">
-            <div className="flex overflow-x-auto space-x-6 pb-1 custom-scrollbar">
+            <div className="flex overflow-x-auto p-1 space-x-1 bg-slate-900/50 backdrop-blur rounded-xl border border-slate-800 custom-scrollbar">
               <button
                 onClick={() => setActiveView("Holdings")}
-                className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
-                  activeView === "Holdings" ? "text-blue-400 border-b-2 border-blue-400 pb-2 -mb-[9px]" : "text-slate-500 hover:text-slate-300"
+                className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider rounded-lg transition-all duration-300 ${
+                  activeView === "Holdings" ? "bg-blue-600/20 text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
                 }`}
               >
                 Holdings
               </button>
               <button
                 onClick={() => setActiveView("Sectors")}
-                className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
-                  activeView === "Sectors" ? "text-blue-400 border-b-2 border-blue-400 pb-2 -mb-[9px]" : "text-slate-500 hover:text-slate-300"
+                className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider rounded-lg transition-all duration-300 ${
+                  activeView === "Sectors" ? "bg-blue-600/20 text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
                 }`}
               >
                 Sector Performance
               </button>
               <button
                 onClick={() => setActiveView("Calendar")}
-                className={`text-sm font-semibold uppercase tracking-wider transition-colors ${
-                  activeView === "Calendar" ? "text-blue-400 border-b-2 border-blue-400 pb-2 -mb-[9px]" : "text-slate-500 hover:text-slate-300"
+                className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider rounded-lg transition-all duration-300 ${
+                  activeView === "Calendar" ? "bg-blue-600/20 text-blue-400 shadow-sm" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
                 }`}
               >
                 Calendar
