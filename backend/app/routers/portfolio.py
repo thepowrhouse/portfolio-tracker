@@ -21,7 +21,7 @@ import time
 _portfolio_cache = {}
 CACHE_TTL = 1800 # 30 minutes
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
