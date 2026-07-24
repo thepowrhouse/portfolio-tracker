@@ -27,8 +27,8 @@ async def check_access(email: str, name: Optional[str] = None, picture: Optional
     
     # If this is a brand new user, put them in 'approved' status automatically
     if not status:
-        set_user_status(email, "approved", name=name, picture=picture)
-        status = "approved"
+        set_user_status(email, "pending", name=name, picture=picture)
+        status = "pending"
     else:
         # Update name and picture if provided and user already exists
         update_user_info(email, name, picture)
