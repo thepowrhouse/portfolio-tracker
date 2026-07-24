@@ -23,7 +23,7 @@ interface PortfolioContextType {
   updateOtherAsset: (id: string, asset: any) => Promise<void>;
   deleteOtherAsset: (id: string) => Promise<void>;
   refreshAction: (() => Promise<void>) | null;
-  setRefreshAction: (action: (() => Promise<void>) | null) => void;
+  setRefreshAction: React.Dispatch<React.SetStateAction<(() => Promise<void>) | null>>;
 }
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
