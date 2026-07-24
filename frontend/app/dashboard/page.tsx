@@ -7,13 +7,21 @@ import { HoldingsTable } from "@/components/holdings/HoldingsTable";
 import { SectorPerformanceTable } from "@/components/sectors/SectorPerformanceTable";
 import { EventCalendar } from "@/components/dashboard/EventCalendar";
 import { usePortfolio } from "@/store/PortfolioContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Suspense } from "react";
 
 function DashboardContent() {
-  const { portfolio } = usePortfolio();
+  const { portfolio, setRefreshAction, refreshPortfolio } = usePortfolio();
   const [activeView, setActiveView] = useState<"Holdings" | "Sectors" | "Calendar">("Holdings");
   const [activeHorizon, setActiveHorizon] = useState<"short" | "mid" | "long">("mid");
+
+  useEffect(() => {
+    setRefreshAction(() => async () => {
+      // Force refresh portfolio (live stock prices)
+      await refreshPortfolio(true);
+    });
+    return () => setRefreshAction(null);
+  }, [setRefreshAction, refreshPortfolio]);
 
   return (
     <div className="w-full">

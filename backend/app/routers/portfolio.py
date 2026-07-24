@@ -16,6 +16,10 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from app.models import PortfolioQuantMetrics
 from app.services.quant import get_quant_metrics
+import time
+
+_portfolio_cache = {}
+CACHE_TTL = 1800 # 30 minutes
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -188,11 +192,88 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     return holdings
 
 @router.get("/state", response_model=PortfolioState)
-async def get_portfolio_state(email: str = Depends(verify_access)):
-    global _portfolio_db
-    user_portfolio = _portfolio_db[email]
+async def get_portfolio_state(force: bool = False, email: str = Depends(verify_access)):
+    """Get the current state of the portfolio including real-time prices."""
+    global _usd_to_inr
+    
+    # Check cache
+    if not force and email in _portfolio_cache:
+        cached_data, timestamp = _portfolio_cache[email]
+        if time.time() - timestamp < CACHE_TTL:
+            return cached_data
+    
+    # 1. Get uploaded holdings
+    uploaded_holdings = _portfolio_db.get(email, [])
+    
+    if not uploaded_holdings:
+        import os
+        import sqlite3
+        from app.db import DB_PATH
+        from app.services.csv_parser import parse_csv_by_broker
+        from app.models import BrokerType
+        from app.services.reconciler import reconcile_portfolio
+
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT broker, file_path FROM user_uploads WHERE email = ? ORDER BY timestamp DESC", (email,))
+        rows = cursor.fetchall()
+        conn.close()
+
+        latest_snapshot = {}
+        latest_tradebook = {}
+
+        for row in rows:
+            broker_str = row["broker"]
+            file_path = row["file_path"]
+            
+            # Stop parsing for a broker if we already have both its snapshot and tradebook
+            if broker_str in latest_snapshot and broker_str in latest_tradebook:
+                continue
+
+            if file_path and os.path.exists(file_path):
+                try:
+                    with open(file_path, "rb") as f:
+                        contents = f.read()
+                    broker_enum = BrokerType(broker_str)
+                    csv_holdings = parse_csv_by_broker(contents, broker_enum)
+                    
+                    if not csv_holdings:
+                        continue
+                        
+                    is_history = getattr(csv_holdings[0], 'is_order_history', False)
+                    
+                    if is_history and broker_str not in latest_tradebook:
+                        latest_tradebook[broker_str] = csv_holdings
+                    elif not is_history and broker_str not in latest_snapshot:
+                        latest_snapshot[broker_str] = csv_holdings
+                except Exception as e:
+                    print(f"Failed to parse cached file for {broker_str}: {e}")
+
+        restored_holdings = []
+        
+        # Step 1: Apply all Holdings Snapshots first
+        for broker_str, csv_holdings in latest_snapshot.items():
+            try:
+                broker_enum = BrokerType(broker_str)
+                restored_holdings = reconcile_portfolio(restored_holdings, csv_holdings, broker_enum)
+            except Exception as e:
+                print(f"Failed to restore snapshot for {broker_str}: {e}")
+                
+        # Step 2: Apply all Order History / Tradebooks to update cashflows
+        for broker_str, csv_holdings in latest_tradebook.items():
+            try:
+                broker_enum = BrokerType(broker_str)
+                restored_holdings = reconcile_portfolio(restored_holdings, csv_holdings, broker_enum)
+            except Exception as e:
+                print(f"Failed to restore tradebook for {broker_str}: {e}")
+
+        if restored_holdings:
+            _portfolio_db[email] = restored_holdings
+            uploaded_holdings = restored_holdings
+                
     rate = await get_forex_rate()
-    enriched = enrich_holdings(user_portfolio)
+    enriched = enrich_holdings(uploaded_holdings)
     
     net_worth = 0
     for h in enriched:
@@ -231,7 +312,7 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
             val *= rate
         net_worth += val
     
-    return PortfolioState(
+    state = PortfolioState(
         holdings=enriched,
         other_assets=other_assets,
         net_worth_inr=round(net_worth, 2),
@@ -239,6 +320,8 @@ async def get_portfolio_state(email: str = Depends(verify_access)):
         last_sync=datetime.utcnow(),
         usd_to_inr=rate
     )
+    _portfolio_cache[email] = (state, time.time())
+    return state
 
 @router.get("/quant", response_model=PortfolioQuantMetrics)
 async def get_portfolio_quant(email: str = Depends(verify_access)):
@@ -366,6 +449,9 @@ async def sync_portfolio(
             f.write(contents)
         log_upload(email, broker.value, len(csv_holdings), file_path, session_id)
         
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
         "added": len([h for h in csv_holdings if not any(
@@ -396,6 +482,10 @@ async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_ac
         asset_class=holding.asset_class
     )
     user_portfolio.append(new_h)
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return new_h
 
 @router.delete("/{holding_id}")
@@ -403,12 +493,20 @@ async def delete_holding(holding_id: str, email: str = Depends(verify_access)):
     global _portfolio_db
     user_portfolio = _portfolio_db[email]
     _portfolio_db[email] = [h for h in user_portfolio if h.id != holding_id]
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return {"message": "Deleted"}
 
 @router.post("/reset")
 async def reset_portfolio(email: str = Depends(verify_access)):
     global _portfolio_db
     _portfolio_db[email].clear()
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return {"message": "Portfolio reset successfully"}
 
 @router.post("/other-assets", response_model=OtherAsset)
@@ -416,6 +514,10 @@ async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verif
     from uuid import uuid4
     asset_id = str(uuid4())
     add_other_asset(asset_id, email, asset.category.value, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return OtherAsset(
         id=asset_id,
         email=email,
@@ -432,9 +534,17 @@ async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verif
 @router.put("/other-assets/{asset_id}", response_model=dict)
 async def modify_other_asset(asset_id: str, asset: OtherAssetUpdate, email: str = Depends(verify_access)):
     update_other_asset(asset_id, email, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return {"message": "Asset updated successfully"}
 
 @router.delete("/other-assets/{asset_id}")
 async def remove_other_asset(asset_id: str, email: str = Depends(verify_access)):
     delete_other_asset(asset_id, email)
+    
+    if email in _portfolio_cache:
+        del _portfolio_cache[email]
+        
     return {"message": "Asset deleted successfully"}

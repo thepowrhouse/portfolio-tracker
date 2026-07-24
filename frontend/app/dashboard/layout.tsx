@@ -101,7 +101,7 @@ function LoginScreen() {
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const { portfolio, refreshPortfolio } = usePortfolio();
+  const { portfolio, refreshPortfolio, refreshAction } = usePortfolio();
 
   if (status === "loading") {
     return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading...</div>;
@@ -131,7 +131,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 Holdings: {portfolio?.holdings?.length || 0}
               </span>
               <button
-                onClick={() => refreshPortfolio()}
+                onClick={async () => {
+                  if (refreshAction) {
+                    await refreshAction();
+                  } else {
+                    await refreshPortfolio(true);
+                  }
+                }}
                 className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition-colors"
               >
                 Refresh

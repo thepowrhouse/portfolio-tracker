@@ -154,6 +154,29 @@ def get_recent_uploads(limit: int = 50) -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
+def get_latest_uploads_per_broker(email: str) -> List[Dict[str, Any]]:
+    """Fetch the latest upload for each broker for a user."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT t1.id, t1.email, t1.broker, t1.records_parsed, t1.timestamp, t1.file_path, t1.session_id
+        FROM user_uploads t1
+        JOIN (
+            SELECT broker, MAX(timestamp) as max_ts
+            FROM user_uploads
+            WHERE email = ?
+            GROUP BY broker
+        ) t2 ON t1.broker = t2.broker AND t1.timestamp = t2.max_ts
+        WHERE t1.email = ?
+        """,
+        (email, email)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 def get_stats() -> Dict[str, Any]:
     """Get overall statistics."""
     conn = sqlite3.connect(DB_PATH)

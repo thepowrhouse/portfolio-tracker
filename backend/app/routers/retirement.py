@@ -6,15 +6,17 @@ from app.routers.portfolio import verify_access, get_portfolio_state
 router = APIRouter(prefix="/retirement", tags=["retirement"])
 
 @router.get("/plan", response_model=RetirementPlan)
-async def get_retirement_plan(email: str = Depends(verify_access)):
+async def get_retirement_plan(
+    target_corpus: float = 100000000.0,
+    real_estate_yield: float = 0.03,
+    debt_yield: float = 0.07,
+    equity_yield: float = 0.015,
+    email: str = Depends(verify_access)
+):
     # Fetch the complete portfolio state using the existing function
-    portfolio_state = await get_portfolio_state(email)
+    portfolio_state = await get_portfolio_state(force=False, email=email)
     
     total_corpus = portfolio_state.net_worth_inr
-    
-    # Simple default target: let's assume 10 Cr or 25x current annual expenses
-    # We will just default to ₹10,00,00,000 for now if they haven't configured one.
-    target_corpus = 100000000.0
     
     monthly_passive_income = 0.0
     
@@ -38,11 +40,11 @@ async def get_retirement_plan(email: str = Depends(verify_access)):
         
         # Yield assumptions
         if category == "real_estate":
-            monthly_passive_income += (val * 0.03) / 12  # 3% rental yield
+            monthly_passive_income += (val * real_estate_yield) / 12
             buckets[4].assets.append({"name": asset.name, "category": "Real Estate", "value": val})
             asset_allocation["real_estate"] += val
         elif category in ["fixed_income", "bonds"]:
-            monthly_passive_income += (val * 0.07) / 12  # 7% interest
+            monthly_passive_income += (val * debt_yield) / 12
             buckets[4].assets.append({"name": asset.name, "category": "Fixed Income", "value": val})
             asset_allocation["debt"] += val
         elif category in ["epf", "ppf", "nps"]:
@@ -54,7 +56,7 @@ async def get_retirement_plan(email: str = Depends(verify_access)):
         elif category == "mutual_funds":
             buckets[2].assets.append({"name": asset.name, "category": "Mutual Funds", "value": val})
             asset_allocation["equity"] += val
-            monthly_passive_income += (val * 0.015) / 12 # 1.5% dividend yield
+            monthly_passive_income += (val * equity_yield) / 12
         else:
             buckets[2].assets.append({"name": asset.name, "category": category.replace("_", " ").title(), "value": val})
             asset_allocation["other"] += val
@@ -65,11 +67,19 @@ async def get_retirement_plan(email: str = Depends(verify_access)):
         if holding.asset_class in ["us_equity", "US_EQUITY"]:
             val *= portfolio_state.usd_to_inr
             
-        monthly_passive_income += (val * 0.015) / 12  # 1.5% average dividend yield
+        monthly_passive_income += (val * equity_yield) / 12
         asset_allocation["equity"] += val
         
+        name_upper = holding.company_name.upper()
+        ticker_upper = holding.ticker.upper()
+        
+        # Check for Liquid funds / Cash
+        is_liquid = "LIQUID" in name_upper or "LIQUID" in ticker_upper or holding.asset_class.lower() == "cash"
+        
+        if is_liquid:
+            buckets[1].assets.append({"name": holding.company_name, "category": "Liquid Fund", "value": val})
         # If it's performing poorly (< -10% PnL), put in Bucket 1 to sell first for tax harvesting
-        if holding.pnl_percent is not None and holding.pnl_percent < -10.0:
+        elif holding.pnl_percent is not None and holding.pnl_percent < -10.0:
             buckets[1].assets.append({"name": holding.company_name, "category": "Underperforming Stock", "value": val})
         else:
             buckets[2].assets.append({"name": holding.company_name, "category": "Stock", "value": val})
@@ -87,13 +97,13 @@ async def get_retirement_plan(email: str = Depends(verify_access)):
         debt_pct = (asset_allocation["debt"] / total_corpus) * 100
         
         if real_estate_pct > 60:
-            recommendations.append("🚨 Your portfolio is highly illiquid (>60% in Real Estate). Consider directing future investments towards liquid equity mutual funds or debt instruments.")
+            recommendations.append(f"🚨 Your portfolio is highly illiquid ({real_estate_pct:.1f}% in Real Estate). Consider directing future investments towards liquid equity mutual funds or debt instruments.")
             
         if equity_pct < 20:
-            recommendations.append("⚠️ Low equity exposure. To beat inflation during a long retirement, consider increasing your equity allocation to at least 30-40%.")
+            recommendations.append(f"⚠️ Low equity exposure (currently {equity_pct:.1f}%). To beat inflation during a long retirement, consider increasing your equity allocation to at least 30-40%.")
             
         if debt_pct < 10:
-            recommendations.append("💡 Consider building a larger fixed-income or debt cushion to protect against market downturns during your initial retirement years.")
+            recommendations.append(f"💡 Low fixed-income allocation ({debt_pct:.1f}%). Consider building a larger fixed-income or debt cushion to protect against market downturns during your initial retirement years.")
             
     if total_corpus < target_corpus * 0.5:
         recommendations.append(f"📈 You are less than 50% towards your target corpus of ₹{target_corpus/10000000:,.2f} Cr. Focus on maximizing SIPs and PPF/EPF contributions.")

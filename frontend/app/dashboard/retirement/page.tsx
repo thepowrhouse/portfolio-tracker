@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Palmtree, Target, TrendingUp, AlertCircle, CheckCircle2, ShieldCheck, WalletCards } from "lucide-react";
+import { Palmtree, Target, TrendingUp, AlertCircle, CheckCircle2, ShieldCheck, WalletCards, Settings2 } from "lucide-react";
 import { usePortfolio } from "@/store/PortfolioContext";
 
 interface WithdrawalBucket {
@@ -23,24 +23,55 @@ interface RetirementPlan {
 export default function RetirementPage() {
   const [plan, setPlan] = useState<RetirementPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const { portfolio } = usePortfolio();
+  
+  const [targetCorpus, setTargetCorpus] = useState(100000000.0);
+  const [realEstateYield, setRealEstateYield] = useState(0.03);
+  const [debtYield, setDebtYield] = useState(0.07);
+  const [equityYield, setEquityYield] = useState(0.015);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const { portfolio, setRefreshAction } = usePortfolio();
 
   useEffect(() => {
-    async function fetchPlan() {
+    const saved = localStorage.getItem("retirementSettings");
+    if (saved) {
       try {
-        setLoading(true);
-        const data = await api.get<RetirementPlan>("/retirement/plan");
-        setPlan(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
+        const parsed = JSON.parse(saved);
+        setTargetCorpus(parsed.targetCorpus ?? 100000000.0);
+        setRealEstateYield(parsed.realEstateYield ?? 0.03);
+        setDebtYield(parsed.debtYield ?? 0.07);
+        setEquityYield(parsed.equityYield ?? 0.015);
+      } catch (e) {}
     }
+  }, []);
+
+  const fetchPlan = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get<RetirementPlan>(
+        `/retirement/plan?target_corpus=${targetCorpus}&real_estate_yield=${realEstateYield}&debt_yield=${debtYield}&equity_yield=${equityYield}`
+      );
+      setPlan(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (portfolio) {
       fetchPlan();
     }
-  }, [portfolio]);
+  }, [portfolio, targetCorpus, realEstateYield, debtYield, equityYield]);
+
+  useEffect(() => {
+    setRefreshAction(() => async () => {
+      // Only refresh the retirement plan
+      await fetchPlan();
+    });
+    return () => setRefreshAction(null);
+  }, [setRefreshAction, targetCorpus, realEstateYield, debtYield, equityYield]);
 
   if (loading || !plan) {
     return (
@@ -58,15 +89,87 @@ export default function RetirementPage() {
   return (
     <div className="w-full">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <Palmtree className="h-6 w-6 text-emerald-400" />
-            Retirement Planner
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            A comprehensive strategy for withdrawing your assets efficiently and tracking your corpus.
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+              <Palmtree className="h-6 w-6 text-emerald-400" />
+              Retirement Planner
+            </h1>
+            <p className="mt-1 text-sm text-slate-400">
+              A comprehensive strategy for withdrawing your assets efficiently and tracking your corpus.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
+          >
+            <Settings2 className="h-4 w-4" />
+            Assumptions
+          </button>
         </div>
+
+        {showSettings && (
+          <div className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
+            <h3 className="text-sm font-semibold text-slate-300 mb-4">Configuration & Assumptions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Target Corpus (₹)</label>
+                <input 
+                  type="number" 
+                  value={targetCorpus}
+                  onChange={(e) => {
+                     const v = Number(e.target.value);
+                     setTargetCorpus(v);
+                     localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus: v, realEstateYield, debtYield, equityYield }));
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Real Estate Yield (%)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  value={Number((realEstateYield * 100).toFixed(1))}
+                  onChange={(e) => {
+                     const v = Number(e.target.value) / 100;
+                     setRealEstateYield(v);
+                     localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield: v, debtYield, equityYield }));
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Fixed Income Yield (%)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  value={Number((debtYield * 100).toFixed(1))}
+                  onChange={(e) => {
+                     const v = Number(e.target.value) / 100;
+                     setDebtYield(v);
+                     localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield, debtYield: v, equityYield }));
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">Equity Dividend Yield (%)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  value={Number((equityYield * 100).toFixed(1))}
+                  onChange={(e) => {
+                     const v = Number(e.target.value) / 100;
+                     setEquityYield(v);
+                     localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield, debtYield, equityYield: v }));
+                  }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Corpus Progress */}
@@ -126,7 +229,7 @@ export default function RetirementPage() {
               <span className="text-slate-500 ml-2">/ month</span>
             </div>
             <p className="mt-4 text-sm text-slate-400 leading-relaxed border-t border-slate-800/50 pt-4">
-              This estimate assumes a ~3% rental yield for Real Estate, ~7% interest for Fixed Income/Bonds, and a ~1.5% average dividend yield for Equities.
+              This estimate assumes a ~{(realEstateYield*100).toFixed(1)}% rental yield for Real Estate, ~{(debtYield*100).toFixed(1)}% interest for Fixed Income/Bonds, and a ~{(equityYield*100).toFixed(1)}% average dividend yield for Equities.
             </p>
           </div>
         </div>

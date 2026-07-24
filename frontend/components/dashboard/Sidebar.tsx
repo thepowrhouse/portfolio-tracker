@@ -7,6 +7,7 @@ import { LineChart, Wallet, LayoutDashboard, PieChart, ReceiptText, Palmtree, Tr
 export function Sidebar() {
   const pathname = usePathname();
 
+  const navItems = [
     {
       name: "Performance",
       href: "/dashboard/performance",
