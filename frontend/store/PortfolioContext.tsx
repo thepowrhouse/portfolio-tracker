@@ -12,7 +12,7 @@ interface PortfolioContextType {
   isLoading: boolean;
   isAnalyzing: boolean;
   error: string | null;
-  refreshPortfolio: () => Promise<void>;
+  refreshPortfolio: (force?: boolean) => Promise<void>;
   setPortfolio: (state: PortfolioState) => void;
   syncCSV: (file: File, broker: string) => Promise<void>;
   addManualHolding: (holding: any) => Promise<void>;
