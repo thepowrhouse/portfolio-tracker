@@ -14,7 +14,7 @@ const CATEGORY_CONFIG: Record<OtherAssetCategory, { label: string, icon: any, co
   real_estate: { label: "Real Estate", icon: Building2, color: "text-emerald-400", bg: "bg-emerald-500/10" },
   crypto: { label: "Crypto", icon: Coins, color: "text-purple-400", bg: "bg-purple-500/10" },
   gold: { label: "Gold", icon: WalletCards, color: "text-amber-400", bg: "bg-amber-500/10" },
-  epf: { label: "EPF", icon: Briefcase, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  savings_bank: { label: "Savings Bank", icon: PiggyBank, color: "text-indigo-400", bg: "bg-indigo-500/10" },
   ppf: { label: "PPF", icon: PiggyBank, color: "text-pink-400", bg: "bg-pink-500/10" },
   nps: { label: "NPS", icon: Shield, color: "text-orange-400", bg: "bg-orange-500/10" },
   bonds: { label: "Bonds", icon: HandCoins, color: "text-teal-400", bg: "bg-teal-500/10" },

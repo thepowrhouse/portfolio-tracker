@@ -20,7 +20,7 @@ class OtherAssetCategory(str, Enum):
     REAL_ESTATE = "real_estate"
     CRYPTO = "crypto"
     MUTUAL_FUNDS = "mutual_funds"
-    EPF = "epf"
+    SAVINGS_BANK = "savings_bank"
     PPF = "ppf"
     NPS = "nps"
     BONDS = "bonds"

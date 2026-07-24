@@ -23,7 +23,7 @@ async def get_retirement_plan(
     buckets: Dict[int, WithdrawalBucket] = {
         1: WithdrawalBucket(bucket_name="Immediate Liquidity (Sell First)", priority=1, description="Cash, Liquid Funds, underperforming or overvalued equity.", assets=[]),
         2: WithdrawalBucket(bucket_name="Mid-Term (1-5 Years)", priority=2, description="Standard equity holdings, Mutual Funds, Gold.", assets=[]),
-        3: WithdrawalBucket(bucket_name="Long-Term (Tax-Free Compounding)", priority=3, description="EPF, PPF, NPS. Do not touch until maturity.", assets=[]),
+        3: WithdrawalBucket(bucket_name="Long-Term (Tax-Free Compounding)", priority=3, description="PPF, NPS. Do not touch until maturity.", assets=[]),
         4: WithdrawalBucket(bucket_name="Income Generating (Sell Last)", priority=4, description="Real Estate, High-Yield Bonds.", assets=[])
     }
     
@@ -47,8 +47,11 @@ async def get_retirement_plan(
             monthly_passive_income += (val * debt_yield) / 12
             buckets[4].assets.append({"name": asset.name, "category": "Fixed Income", "value": val})
             asset_allocation["debt"] += val
-        elif category in ["epf", "ppf", "nps"]:
+        elif category in ["ppf", "nps"]:
             buckets[3].assets.append({"name": asset.name, "category": category.upper(), "value": val})
+            asset_allocation["debt"] += val
+        elif category == "savings_bank":
+            buckets[1].assets.append({"name": asset.name, "category": "Savings Account", "value": val})
             asset_allocation["debt"] += val
         elif category == "gold":
             buckets[2].assets.append({"name": asset.name, "category": "Gold", "value": val})
@@ -106,7 +109,7 @@ async def get_retirement_plan(
             recommendations.append(f"💡 Low fixed-income allocation ({debt_pct:.1f}%). Consider building a larger fixed-income or debt cushion to protect against market downturns during your initial retirement years.")
             
     if total_corpus < target_corpus * 0.5:
-        recommendations.append(f"📈 You are less than 50% towards your target corpus of ₹{target_corpus/10000000:,.2f} Cr. Focus on maximizing SIPs and PPF/EPF contributions.")
+        recommendations.append(f"📈 You are less than 50% towards your target corpus of ₹{target_corpus/10000000:,.2f} Cr. Focus on maximizing SIPs and PPF contributions.")
     elif total_corpus >= target_corpus:
         recommendations.append("🎉 Congratulations! You have reached your target retirement corpus.")
 
