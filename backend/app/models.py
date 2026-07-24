@@ -26,7 +26,7 @@ class OtherAssetCategory(str, Enum):
     BONDS = "bonds"
     VEHICLE = "vehicle"
     FIXED_INCOME = "fixed_income"
-    ESOP_RSU = "esop_rsu"
+    EPF = "epf"
 
 class Recommendation(str, Enum):
     BUY = "BUY"

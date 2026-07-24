@@ -90,7 +90,7 @@ export default function PerformancePage() {
     if (lower.includes("stock") || lower.includes("equity")) return LineChart;
     if (lower.includes("real estate") || lower.includes("property")) return Building;
     if (lower.includes("gold") || lower.includes("silver")) return Coins;
-    if (lower.includes("savings") || lower.includes("ppf") || lower.includes("bond")) return Shield;
+    if (lower.includes("savings") || lower.includes("epf") || lower.includes("ppf") || lower.includes("bond")) return Shield;
     if (lower.includes("vehicle") || lower.includes("car")) return Car;
     return Diamond;
   };
@@ -114,7 +114,7 @@ export default function PerformancePage() {
       const lower = cat.toLowerCase();
       if (lower.includes("real estate")) colorName = "emerald";
       else if (lower.includes("gold")) colorName = "amber";
-      else if (lower.includes("savings") || lower.includes("ppf")) colorName = "indigo";
+      else if (lower.includes("savings") || lower.includes("epf") || lower.includes("ppf")) colorName = "indigo";
       else if (lower.includes("vehicle")) colorName = "rose";
       else colorName = getNextColor();
 

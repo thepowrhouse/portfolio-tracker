@@ -1,6 +1,6 @@
 export type BrokerType = "zerodha" | "groww" | "indmoney" | "angelone" | "rsu";
 export type AssetClass = "indian_equity" | "us_equity" | "rsu";
-export type OtherAssetCategory = "gold" | "real_estate" | "crypto" | "mutual_funds" | "savings_bank" | "ppf" | "nps" | "bonds" | "vehicle" | "fixed_income" | "esop_rsu";
+export type OtherAssetCategory = "gold" | "real_estate" | "crypto" | "mutual_funds" | "savings_bank" | "ppf" | "nps" | "bonds" | "vehicle" | "fixed_income" | "epf";
 export type Recommendation = "BUY" | "HOLD" | "SELL";
 export type SentimentGrade = "Bullish" | "Neutral" | "Bearish";
 

@@ -20,7 +20,7 @@ const CATEGORY_CONFIG: Record<OtherAssetCategory, { label: string, icon: any, co
   bonds: { label: "Bonds", icon: HandCoins, color: "text-teal-400", bg: "bg-teal-500/10" },
   vehicle: { label: "Vehicle", icon: Car, color: "text-rose-400", bg: "bg-rose-500/10" },
   fixed_income: { label: "Fixed Income", icon: WalletCards, color: "text-cyan-400", bg: "bg-cyan-500/10" },
-  esop_rsu: { label: "ESOPs / RSUs", icon: Briefcase, color: "text-lime-400", bg: "bg-lime-500/10" }
+  epf: { label: "EPF", icon: Briefcase, color: "text-indigo-400", bg: "bg-indigo-500/10" }
 };
 
 export default function OtherAssetsPage() {
