@@ -233,11 +233,11 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
         tickers_to_fetch.add(yf_ticker)
             
         h = PortfolioHolding(
+            id=str(r['id']),
             ticker=r['ticker'],
             company_name=r['company_name'],
             quantity=r['quantity'],
             avg_price=r['avg_price'],
-            currency=r['currency'],
             asset_class=r['asset_class'],
             broker=r['broker'],
             current_price=r['avg_price'],
@@ -306,6 +306,7 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
     for o in other_assets:
         other_assets_list.append(OtherAsset(
             id=o['id'],
+            email=email,
             category=o['category'],
             name=o['name'],
             value=o['value'],
@@ -429,11 +430,11 @@ async def sync_portfolio(
     user_portfolio = []
     for r in raw_holdings:
         h = PortfolioHolding(
+            id=str(r['id']),
             ticker=r['ticker'],
             company_name=r['company_name'],
             quantity=r['quantity'],
             avg_price=r['avg_price'],
-            currency=r['currency'],
             asset_class=r['asset_class'],
             broker=r['broker'],
             current_price=r['avg_price'],
