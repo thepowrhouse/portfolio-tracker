@@ -395,6 +395,14 @@ def get_user_holdings(email: str) -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
+def delete_user_holdings(email: str):
+    """Deletes all holdings for a user. Used for portfolio reset."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM user_holdings WHERE email = ?", (email,))
+    conn.commit()
+    conn.close()
+
 def get_all_unique_tickers() -> List[Tuple[str, str]]:
     """Get all unique tickers and their asset classes across all users for the background poller."""
     conn = sqlite3.connect(DB_PATH)

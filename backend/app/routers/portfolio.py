@@ -593,6 +593,9 @@ async def reset_portfolio(email: str = Depends(verify_access)):
     global _portfolio_db
     _portfolio_db[email].clear()
     
+    from app.db import delete_user_holdings
+    delete_user_holdings(email)
+    
     if email in _portfolio_cache:
         del _portfolio_cache[email]
         
