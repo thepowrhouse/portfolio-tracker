@@ -384,10 +384,10 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
 @router.get("/quant", response_model=PortfolioQuantMetrics)
 async def get_portfolio_quant(email: str = Depends(verify_access)):
     """Calculate portfolio-level weighted risk metrics (Alpha, Beta, Sharpe, Sortino)."""
-    global _portfolio_db
-    user_portfolio = _portfolio_db[email]
+    from app.db import get_user_holdings
+    raw_holdings = get_user_holdings(email)
     
-    if not user_portfolio:
+    if not raw_holdings:
         return PortfolioQuantMetrics(
             portfolio_beta=1.0,
             portfolio_alpha=0.0,
@@ -395,6 +395,24 @@ async def get_portfolio_quant(email: str = Depends(verify_access)):
             portfolio_sortino=0.0,
             holdings_analyzed=0
         )
+        
+    user_portfolio = []
+    for r in raw_holdings:
+        h = PortfolioHolding(
+            id=str(r['id']),
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            asset_class=r['asset_class'],
+            broker=r['broker'],
+            current_price=r['avg_price'],
+            pnl_absolute=0.0,
+            pnl_percent=0.0,
+            day_change_absolute=0.0,
+            day_change_percent=0.0
+        )
+        user_portfolio.append(h)
         
     rate = await get_forex_rate()
     
@@ -571,8 +589,43 @@ async def sync_portfolio(
 @router.post("/manual")
 async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_access)):
     """For RSU or manual entries."""
-    global _portfolio_db
-    user_portfolio = _portfolio_db[email]
+    from app.db import get_user_holdings, save_user_holdings
+    raw_holdings = get_user_holdings(email)
+    
+    # We need to construct a dict that save_user_holdings expects.
+    # Actually, save_user_holdings just takes a list of objects that have .ticker, .company_name etc.
+    # We can reconstruct the PortfolioHolding objects
+    user_portfolio = []
+    from dateutil.parser import parse
+    from app.models import CashFlow
+    import json
+    for r in raw_holdings:
+        cfs_list = []
+        cfs_json = r.get('cashflows')
+        if cfs_json:
+            try:
+                for cf in json.loads(cfs_json):
+                    cfs_list.append(CashFlow(date=parse(cf["date"]), amount=cf["amount"]))
+            except Exception:
+                pass
+        
+        h = PortfolioHolding(
+            id=str(r['id']),
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            asset_class=r['asset_class'],
+            broker=r['broker'],
+            current_price=r['avg_price'],
+            pnl_absolute=0.0,
+            pnl_percent=0.0,
+            day_change_absolute=0.0,
+            day_change_percent=0.0,
+            cashflows=cfs_list
+        )
+        user_portfolio.append(h)
+        
     from uuid import uuid4
     new_h = PortfolioHolding(
         id=str(uuid4()),
@@ -585,6 +638,8 @@ async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_ac
     )
     user_portfolio.append(new_h)
     
+    save_user_holdings(email, user_portfolio)
+    
     if email in _portfolio_cache:
         del _portfolio_cache[email]
         
@@ -592,9 +647,44 @@ async def add_manual_holding(holding: CSVHolding, email: str = Depends(verify_ac
 
 @router.delete("/{holding_id}")
 async def delete_holding(holding_id: str, email: str = Depends(verify_access)):
-    global _portfolio_db
-    user_portfolio = _portfolio_db[email]
-    _portfolio_db[email] = [h for h in user_portfolio if h.id != holding_id]
+    from app.db import get_user_holdings, save_user_holdings
+    raw_holdings = get_user_holdings(email)
+    
+    user_portfolio = []
+    from dateutil.parser import parse
+    from app.models import CashFlow
+    import json
+    for r in raw_holdings:
+        if str(r['id']) == holding_id:
+            continue
+            
+        cfs_list = []
+        cfs_json = r.get('cashflows')
+        if cfs_json:
+            try:
+                for cf in json.loads(cfs_json):
+                    cfs_list.append(CashFlow(date=parse(cf["date"]), amount=cf["amount"]))
+            except Exception:
+                pass
+                
+        h = PortfolioHolding(
+            id=str(r['id']),
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            asset_class=r['asset_class'],
+            broker=r['broker'],
+            current_price=r['avg_price'],
+            pnl_absolute=0.0,
+            pnl_percent=0.0,
+            day_change_absolute=0.0,
+            day_change_percent=0.0,
+            cashflows=cfs_list
+        )
+        user_portfolio.append(h)
+        
+    save_user_holdings(email, user_portfolio)
     
     if email in _portfolio_cache:
         del _portfolio_cache[email]
