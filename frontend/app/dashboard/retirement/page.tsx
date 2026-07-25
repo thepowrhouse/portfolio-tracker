@@ -266,7 +266,58 @@ export default function RetirementPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Drawing Capacity Banner */}
+        <div className="mb-6 relative overflow-hidden rounded-3xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 p-8 shadow-2xl hover:shadow-[0_10px_40px_rgba(0,0,0,0.3)] transition-all">
+          <div className={`absolute top-0 right-0 h-64 w-64 rounded-full blur-[100px] opacity-20 ${
+            plan.financial_independence_status === "Shortfall" ? "bg-red-500" : "bg-emerald-500"
+          }`} />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-4">
+                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl shadow-inner ${
+                  plan.financial_independence_status === "Shortfall" ? "bg-red-500/20" : "bg-emerald-500/20"
+                }`}>
+                  <WalletCards className={`h-8 w-8 ${
+                    plan.financial_independence_status === "Shortfall" ? "text-red-400" : "text-emerald-400"
+                  }`} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold uppercase tracking-wider text-slate-200">Drawing Capacity</h3>
+                  <p className="text-sm font-medium text-slate-400 mt-1">If you retired today for {plan.years_to_live} years</p>
+                </div>
+              </div>
+              
+              <div className="flex items-baseline mb-2">
+                <span className={`text-5xl md:text-7xl font-extrabold tabular-nums text-transparent bg-clip-text drop-shadow-md ${
+                  plan.financial_independence_status === "Shortfall" ? "bg-gradient-to-r from-red-400 to-orange-300" : "bg-gradient-to-r from-emerald-400 to-teal-300"
+                }`}>
+                  ₹{plan.drawing_capacity_per_month.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                </span>
+                <span className="text-lg font-medium text-slate-500 ml-4">/ month</span>
+              </div>
+            </div>
+
+            <div className="w-full md:w-auto md:min-w-[300px] flex flex-col gap-4">
+              {plan.financial_independence_status.includes("Achieved") ? (
+                <div className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-lg font-bold">
+                  <CheckCircle2 className="h-6 w-6" /> FI Achieved
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-lg font-bold">
+                  <AlertCircle className="h-6 w-6" /> Shortfall
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between rounded-xl bg-slate-950/40 p-4 border border-slate-800/50 backdrop-blur-sm">
+                <span className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Current Expenses</span>
+                <span className="text-lg font-bold text-slate-200">₹{plan.monthly_expenses.toLocaleString("en-IN", { maximumFractionDigits: 0 })}/mo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Corpus Progress */}
           <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-xl flex flex-col justify-center min-h-[200px] hover:shadow-2xl transition-all hover:-translate-y-1">
             <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-blue-500 blur-3xl opacity-10" />
@@ -282,16 +333,16 @@ export default function RetirementPage() {
                 </div>
               </div>
               
-              <div className="mb-5 flex items-end justify-between">
+              <div className="mb-6 flex flex-col gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Current Corpus</div>
-                  <div className="text-4xl font-extrabold tabular-nums text-white drop-shadow-sm">
+                  <div className="text-4xl font-extrabold tabular-nums text-white drop-shadow-sm truncate">
                     ₹{plan.total_corpus.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </div>
                 </div>
-                <div className="text-right">
+                <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Target</div>
-                  <div className="text-xl font-bold tabular-nums text-slate-400">
+                  <div className="text-xl font-bold tabular-nums text-slate-400 truncate">
                     ₹{plan.target_corpus.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </div>
                 </div>
@@ -326,7 +377,7 @@ export default function RetirementPage() {
               
               <div className="mt-auto mb-4">
                 <div className="flex items-baseline">
-                  <span className="text-5xl font-extrabold tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 drop-shadow-sm">
+                  <span className="text-5xl font-extrabold tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 drop-shadow-sm truncate">
                     ₹{plan.estimated_monthly_passive_income.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </span>
                   <span className="text-sm font-medium text-slate-500 ml-3">/ month</span>
@@ -337,56 +388,6 @@ export default function RetirementPage() {
                 <p className="text-xs font-medium text-slate-400 leading-relaxed">
                   Calculated based on your custom Configuration & Assumptions.
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Drawing Capacity */}
-          <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-xl flex flex-col justify-center min-h-[200px] hover:shadow-2xl transition-all hover:-translate-y-1">
-            <div className={`absolute top-0 right-0 h-32 w-32 rounded-full blur-3xl opacity-10 ${
-              plan.financial_independence_status === "Shortfall" ? "bg-red-500" : "bg-emerald-500"
-            }`} />
-            
-            <div className="relative z-10 flex flex-col h-full">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-inner ${
-                    plan.financial_independence_status === "Shortfall" ? "bg-red-500/20" : "bg-emerald-500/20"
-                  }`}>
-                    <WalletCards className={`h-6 w-6 ${
-                      plan.financial_independence_status === "Shortfall" ? "text-red-400" : "text-emerald-400"
-                    }`} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Drawing Capacity</h3>
-                    <p className="text-xs font-medium text-slate-500 mt-0.5">If you retired today for {plan.years_to_live} years</p>
-                  </div>
-                </div>
-                {plan.financial_independence_status.includes("Achieved") ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                    <CheckCircle2 className="h-3 w-3" /> FI Achieved
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
-                    <AlertCircle className="h-3 w-3" /> Shortfall
-                  </div>
-                )}
-              </div>
-              
-              <div className="mt-auto mb-4">
-                <div className="flex items-baseline">
-                  <span className={`text-5xl font-extrabold tabular-nums text-transparent bg-clip-text drop-shadow-sm ${
-                    plan.financial_independence_status === "Shortfall" ? "bg-gradient-to-r from-red-400 to-orange-300" : "bg-gradient-to-r from-emerald-400 to-teal-300"
-                  }`}>
-                    ₹{plan.drawing_capacity_per_month.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                  </span>
-                  <span className="text-sm font-medium text-slate-500 ml-3">/ month</span>
-                </div>
-              </div>
-              
-              <div className="mt-auto flex items-center justify-between rounded-xl bg-slate-950/40 p-3 border border-slate-800/50 backdrop-blur-sm">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Expenses</span>
-                <span className="text-sm font-bold text-slate-200">₹{plan.monthly_expenses.toLocaleString("en-IN", { maximumFractionDigits: 0 })}/mo</span>
               </div>
             </div>
           </div>
