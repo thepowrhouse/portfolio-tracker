@@ -86,6 +86,7 @@ def get_session_id(x_session_id: str = Header(default=None)) -> str:
 
 def fetch_name_from_yahoo(ticker: str) -> str:
     import requests
+    import time
     try:
         url = f"https://query2.finance.yahoo.com/v1/finance/search?q={ticker}"
         r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
@@ -93,8 +94,11 @@ def fetch_name_from_yahoo(ticker: str) -> str:
             quotes = r.json().get('quotes', [])
             if quotes:
                 return quotes[0].get('longname') or quotes[0].get('shortname') or ticker
-    except:
-        pass
+        else:
+            print(f"Yahoo search failed for {ticker} with status: {r.status_code}")
+        time.sleep(0.5)
+    except Exception as e:
+        print(f"Yahoo search error for {ticker}: {e}")
     return ticker
 
 def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
@@ -204,6 +208,7 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
             # Compute XIRR if cashflows are available
             if getattr(h, 'cashflows', None) and len(h.cashflows) > 0 and h.quantity > 0:
                 from app.utils.math_utils import calculate_xirr
+                from datetime import timezone
                 
                 # Copy cashflows to avoid mutating the original DB record
                 cfs = [(cf.date, cf.amount) for cf in h.cashflows]
@@ -216,6 +221,7 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
                     h.xirr = round(rate * 100, 2)
                     
         except Exception as e:
+            import traceback
             print(f"Error enriching {h.ticker}: {e}")
             h.current_price = h.avg_price
             h.pnl_absolute = 0
@@ -489,9 +495,9 @@ async def sync_portfolio(
             tickers_needing_names.add(yf_ticker)
             
     if tickers_needing_names:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(fetch_name_from_yahoo, tickers_needing_names))
-            name_map = dict(zip(tickers_needing_names, results))
+        name_map = {}
+        for yf_ticker in tickers_needing_names:
+            name_map[yf_ticker] = fetch_name_from_yahoo(yf_ticker)
             
         for h in csv_holdings:
             if h.company_name == h.ticker:

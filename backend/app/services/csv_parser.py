@@ -122,14 +122,17 @@ def _parse_zerodha_tradebook(df: pd.DataFrame, actual_cols: dict) -> List[CSVHol
             
             date_str = str(row[date_col]).strip()
             try:
-                dt = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                dt = datetime.strptime(date_str, "%Y-%m-%d")
+                from dateutil.parser import parse
+                dt = parse(date_str)
+            except Exception as e:
+                print(f"Failed to parse date: {date_str}, error: {e}")
+                continue
             
             name = ticker
             
             transactions.append((dt, ticker, qty, val, t_type, name))
-        except Exception:
+        except Exception as e:
+            print(f"Skipping row due to error: {e}")
             continue
             
     transactions.sort(key=lambda x: x[0])
