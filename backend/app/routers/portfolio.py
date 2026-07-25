@@ -245,6 +245,18 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
             yf_ticker += ".NS"
         tickers_to_fetch.add(yf_ticker)
             
+        cfs_list = []
+        cfs_json = r.get('cashflows')
+        if cfs_json:
+            import json
+            from dateutil.parser import parse
+            from app.models import CashFlow
+            try:
+                for cf in json.loads(cfs_json):
+                    cfs_list.append(CashFlow(date=parse(cf["date"]), amount=cf["amount"]))
+            except Exception as e:
+                print(f"Failed to parse cashflows for {r['ticker']}: {e}")
+                
         h = PortfolioHolding(
             id=str(r['id']),
             ticker=r['ticker'],
@@ -259,7 +271,7 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
             day_change_absolute=0.0,
             day_change_percent=0.0,
             xirr=None,
-            cashflows=[]
+            cashflows=cfs_list
         )
         holdings.append(h)
         

@@ -118,6 +118,11 @@ def init_db():
         cursor.execute("ALTER TABLE user_logins ADD COLUMN ip_address TEXT")
     except sqlite3.OperationalError:
         pass
+        
+    try:
+        cursor.execute("ALTER TABLE user_holdings ADD COLUMN cashflows TEXT")
+    except sqlite3.OperationalError:
+        pass
     
     # Try adding new columns to other_assets
     try:
@@ -358,20 +363,24 @@ def save_user_holdings(email: str, holdings: List[Any]):
     
     # Insert new ones
     now = datetime.utcnow().isoformat()
+    import json
     for h in holdings:
         asset_class_str = h.asset_class.value if hasattr(h.asset_class, 'value') else h.asset_class
         currency = "USD" if asset_class_str in ("us_equity", "US_EQUITY") else "INR"
         
+        cfs = getattr(h, 'cashflows', [])
+        cfs_json = json.dumps([{"date": cf.date.isoformat() if hasattr(cf.date, 'isoformat') else str(cf.date), "amount": cf.amount} for cf in cfs]) if cfs else None
+        
         cursor.execute(
             """
             INSERT INTO user_holdings 
-            (email, ticker, company_name, quantity, avg_price, currency, asset_class, broker, is_order_history, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (email, ticker, company_name, quantity, avg_price, currency, asset_class, broker, is_order_history, cashflows, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (email, h.ticker, h.company_name, h.quantity, h.avg_price, currency, 
              asset_class_str,
              h.broker.value if hasattr(h.broker, 'value') else h.broker,
-             getattr(h, 'is_order_history', False), now)
+             getattr(h, 'is_order_history', False), cfs_json, now)
         )
     conn.commit()
     conn.close()
