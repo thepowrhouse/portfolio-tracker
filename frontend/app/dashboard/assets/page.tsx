@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Building2, Coins, Landmark, WalletCards, 
   Car, Shield, PiggyBank, Briefcase, 
@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { usePortfolio } from "@/store/PortfolioContext";
 import { OtherAssetCategory, OtherAsset } from "@/types";
+
+import { useRouter, useSearchParams } from "next/navigation";
 
 const CATEGORY_CONFIG: Record<OtherAssetCategory, { label: string, icon: any, color: string, bg: string }> = {
   mutual_funds: { label: "Mutual Funds", icon: Landmark, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -23,9 +25,21 @@ const CATEGORY_CONFIG: Record<OtherAssetCategory, { label: string, icon: any, co
   epf: { label: "EPF", icon: Briefcase, color: "text-indigo-400", bg: "bg-indigo-500/10" }
 };
 
-export default function OtherAssetsPage() {
+function OtherAssetsContent() {
   const { portfolio, addOtherAsset, updateOtherAsset, deleteOtherAsset } = usePortfolio();
-  const [activeCategory, setActiveCategory] = useState<OtherAssetCategory | null>(null);
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeCategoryParam = searchParams.get("category");
+  const activeCategory = (activeCategoryParam as OtherAssetCategory) || null;
+
+  const setActiveCategory = (cat: OtherAssetCategory | null) => {
+    if (cat) {
+      router.push(`/dashboard/assets?category=${cat}`);
+    } else {
+      router.push(`/dashboard/assets`);
+    }
+  };
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -424,5 +438,13 @@ export default function OtherAssetsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OtherAssetsPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-slate-400">Loading assets...</div>}>
+      <OtherAssetsContent />
+    </React.Suspense>
   );
 }

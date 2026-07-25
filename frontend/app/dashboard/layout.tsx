@@ -150,7 +150,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <p className="text-xs font-medium text-slate-200">{session?.user?.name}</p>
                 </div>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/dashboard" })}
+                  onClick={() => signOut({ callbackUrl: "/" })}
                   className="text-xs text-slate-400 hover:text-slate-200 ml-2"
                 >
                   Sign out
