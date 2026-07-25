@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from "jsonwebtoken";
 
 export const authOptions: NextAuthOptions = {
@@ -8,9 +9,34 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
+    CredentialsProvider({
+      name: "Admin Impersonation",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        adminPassword: { label: "Admin Password", type: "password" }
+      },
+      async authorize(credentials, req) {
+        if (!credentials?.email || !credentials?.adminPassword) {
+          return null;
+        }
+        const validPassword = process.env.ADMIN_PASSWORD || "secret123";
+        if (credentials.adminPassword === validPassword) {
+          return {
+            id: credentials.email,
+            email: credentials.email,
+            name: "Ghost Mode User"
+          };
+        }
+        return null;
+      }
+    })
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
+      if (account?.provider === "credentials") {
+        return true;
+      }
+      
       try {
         if (!user.email) return false;
         const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
