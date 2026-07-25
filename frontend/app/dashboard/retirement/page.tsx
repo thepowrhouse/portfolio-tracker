@@ -47,7 +47,16 @@ export default function RetirementPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const merged = { ...defaultConfig, ...parsed };
+        const merged = { ...defaultConfig };
+        for (const key in parsed) {
+          if (
+            parsed[key] !== null && 
+            parsed[key] !== undefined && 
+            !Number.isNaN(Number(parsed[key]))
+          ) {
+            (merged as any)[key] = Number(parsed[key]);
+          }
+        }
         setActiveConfig(merged);
         setDraftConfig(merged);
       } catch (e) {}
@@ -58,15 +67,15 @@ export default function RetirementPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        target_corpus: configToUse.targetCorpus.toString(),
-        real_estate_yield: configToUse.realEstateYield.toString(),
-        debt_yield: configToUse.debtYield.toString(),
-        equity_yield: configToUse.equityYield.toString(),
-        epf_yield: configToUse.epfYield.toString(),
-        ppf_yield: configToUse.ppfYield.toString(),
-        nps_yield: configToUse.npsYield.toString(),
-        gold_yield: configToUse.goldYield.toString(),
-        savings_yield: configToUse.savingsYield.toString(),
+        target_corpus: (configToUse.targetCorpus || 100000000).toString(),
+        real_estate_yield: (configToUse.realEstateYield || 0.08).toString(),
+        debt_yield: (configToUse.debtYield || 0.07).toString(),
+        equity_yield: (configToUse.equityYield || 0.12).toString(),
+        epf_yield: (configToUse.epfYield || 0.081).toString(),
+        ppf_yield: (configToUse.ppfYield || 0.071).toString(),
+        nps_yield: (configToUse.npsYield || 0.1).toString(),
+        gold_yield: (configToUse.goldYield || 0.1).toString(),
+        savings_yield: (configToUse.savingsYield || 0.03).toString(),
       });
       const data = await api.get<RetirementPlan>(`/retirement/plan?${params.toString()}`);
       setPlan(data);
