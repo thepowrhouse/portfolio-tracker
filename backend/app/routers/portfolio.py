@@ -84,6 +84,19 @@ def verify_access(email: str = Depends(get_user_email)) -> str:
 def get_session_id(x_session_id: str = Header(default=None)) -> str:
     return x_session_id
 
+def fetch_name_from_yahoo(ticker: str) -> str:
+    import requests
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={ticker}"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=3)
+        if r.status_code == 200:
+            quotes = r.json().get('quotes', [])
+            if quotes:
+                return quotes[0].get('longname') or quotes[0].get('shortname') or ticker
+    except:
+        pass
+    return ticker
+
 def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
     """Fetch current prices and compute P&L in parallel."""
     if not holdings:
@@ -445,14 +458,39 @@ async def sync_portfolio(
         )
         user_portfolio.append(h)
     
+    # 2. Parse CSV
     contents = await file.read()
     
     try:
         csv_holdings = parse_csv_by_broker(contents, broker)
     except Exception as e:
         raise HTTPException(400, detail=str(e))
+        
+    # 3. Resolve missing company names in parallel
+    import concurrent.futures
+    tickers_needing_names = set()
+    for h in csv_holdings:
+        if h.company_name == h.ticker:
+            yf_ticker = h.ticker
+            if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+                yf_ticker += ".NS"
+            tickers_needing_names.add(yf_ticker)
+            
+    if tickers_needing_names:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(fetch_name_from_yahoo, tickers_needing_names))
+            name_map = dict(zip(tickers_needing_names, results))
+            
+        for h in csv_holdings:
+            if h.company_name == h.ticker:
+                yf_ticker = h.ticker
+                if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+                    yf_ticker += ".NS"
+                fetched_name = name_map.get(yf_ticker)
+                if fetched_name and fetched_name != yf_ticker:
+                    h.company_name = fetched_name
     
-    # Reconcile
+    # 4. Reconcile
     try:
         for h in csv_holdings:
             if h.broker == BrokerType.INDMONEY and h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY") and not getattr(h, 'is_order_history', False):

@@ -36,9 +36,24 @@ async def get_batch_analysis(email: str = Depends(verify_access)):
     Fetch analysis for ALL holdings in portfolio.
     Called after CSV sync to refresh all recommendations.
     """
-    user_portfolio = _portfolio_db[email]
-    if not user_portfolio:
+    from app.db import get_user_holdings
+    from app.models import PortfolioHolding
+    
+    raw_holdings = get_user_holdings(email)
+    if not raw_holdings:
         return []
+        
+    user_portfolio = []
+    for r in raw_holdings:
+        user_portfolio.append(PortfolioHolding(
+            id=str(r['id']),
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            asset_class=r['asset_class'],
+            broker=r['broker']
+        ))
         
     loop = asyncio.get_event_loop()
     with ThreadPoolExecutor(max_workers=10) as executor:
@@ -56,15 +71,17 @@ async def get_stock_analysis(ticker: str, email: str = Depends(verify_access)):
     Fetch complete analysis for a single stock.
     Called by frontend when expanding a stock row.
     """
-    user_portfolio = _portfolio_db[email]
+    from app.db import get_user_holdings
+    
+    raw_holdings = get_user_holdings(email)
     # Find holding to get asset class
     holding = next(
-        (h for h in user_portfolio if h.ticker.upper() == ticker.upper()),
+        (h for h in raw_holdings if h['ticker'].upper() == ticker.upper()),
         None
     )
     
-    asset_class = holding.asset_class if holding else "us_equity"
-    company_name = holding.company_name if holding else ticker
+    asset_class = holding['asset_class'] if holding else "us_equity"
+    company_name = holding['company_name'] if holding else ticker
     
     technical = get_technical_analysis(ticker, asset_class)
     fundamental = get_fundamental_analysis(ticker, asset_class)
