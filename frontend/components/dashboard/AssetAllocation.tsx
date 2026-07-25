@@ -318,16 +318,16 @@ export function AssetAllocation({ activeHorizon = "mid" }: AssetAllocationProps)
             })}
             
             {view === "performance" && performanceStats && (
-              <div className="pt-3 mt-3 border-t border-slate-800/80 bg-slate-950/30 p-2 rounded-lg backdrop-blur-sm">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Profit</span>
-                  <span className="text-sm font-bold text-emerald-400">
+              <div className="pt-3 mt-3 border-t border-slate-800/80 bg-slate-950/30 p-2 rounded-lg backdrop-blur-sm space-y-2">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Total Profit</span>
+                  <span className="text-sm font-bold tabular-nums text-emerald-400 truncate">
                     +₹{performanceStats.totalProfit.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Loss</span>
-                  <span className="text-sm font-bold text-red-400">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Total Loss</span>
+                  <span className="text-sm font-bold tabular-nums text-red-400 truncate">
                     -₹{Math.abs(performanceStats.totalLoss).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </span>
                 </div>
