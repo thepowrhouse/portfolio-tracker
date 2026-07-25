@@ -481,11 +481,11 @@ async def sync_portfolio(
         cfs_list = []
         if r.get('cashflows'):
             try:
-                from app.models import Cashflow
+                from app.models import CashFlow
                 import dateutil.parser
                 cfs_raw = json.loads(r['cashflows'])
                 for cf in cfs_raw:
-                    cfs_list.append(Cashflow(date=dateutil.parser.parse(cf['date']), amount=float(cf['amount'])))
+                    cfs_list.append(CashFlow(date=dateutil.parser.parse(cf['date']), amount=float(cf['amount'])))
             except Exception as e:
                 print(f"Error parsing cashflows for {r['ticker']} in sync: {e}")
                 
