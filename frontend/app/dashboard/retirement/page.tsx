@@ -24,10 +24,20 @@ export default function RetirementPage() {
   const [plan, setPlan] = useState<RetirementPlan | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [targetCorpus, setTargetCorpus] = useState(100000000.0);
-  const [realEstateYield, setRealEstateYield] = useState(0.03);
-  const [debtYield, setDebtYield] = useState(0.07);
-  const [equityYield, setEquityYield] = useState(0.015);
+  const defaultConfig = {
+    targetCorpus: 100000000.0,
+    realEstateYield: 0.08,
+    debtYield: 0.07,
+    equityYield: 0.12,
+    epfYield: 0.081,
+    ppfYield: 0.071,
+    npsYield: 0.10,
+    goldYield: 0.10,
+    savingsYield: 0.03
+  };
+
+  const [activeConfig, setActiveConfig] = useState(defaultConfig);
+  const [draftConfig, setDraftConfig] = useState(defaultConfig);
   const [showSettings, setShowSettings] = useState(false);
   
   const { portfolio, setRefreshAction } = usePortfolio();
@@ -37,20 +47,28 @@ export default function RetirementPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setTargetCorpus(parsed.targetCorpus ?? 100000000.0);
-        setRealEstateYield(parsed.realEstateYield ?? 0.03);
-        setDebtYield(parsed.debtYield ?? 0.07);
-        setEquityYield(parsed.equityYield ?? 0.015);
+        const merged = { ...defaultConfig, ...parsed };
+        setActiveConfig(merged);
+        setDraftConfig(merged);
       } catch (e) {}
     }
   }, []);
 
-  const fetchPlan = async () => {
+  const fetchPlan = async (configToUse = activeConfig) => {
     try {
       setLoading(true);
-      const data = await api.get<RetirementPlan>(
-        `/retirement/plan?target_corpus=${targetCorpus}&real_estate_yield=${realEstateYield}&debt_yield=${debtYield}&equity_yield=${equityYield}`
-      );
+      const params = new URLSearchParams({
+        target_corpus: configToUse.targetCorpus.toString(),
+        real_estate_yield: configToUse.realEstateYield.toString(),
+        debt_yield: configToUse.debtYield.toString(),
+        equity_yield: configToUse.equityYield.toString(),
+        epf_yield: configToUse.epfYield.toString(),
+        ppf_yield: configToUse.ppfYield.toString(),
+        nps_yield: configToUse.npsYield.toString(),
+        gold_yield: configToUse.goldYield.toString(),
+        savings_yield: configToUse.savingsYield.toString(),
+      });
+      const data = await api.get<RetirementPlan>(`/retirement/plan?${params.toString()}`);
       setPlan(data);
     } catch (e) {
       console.error(e);
@@ -63,7 +81,7 @@ export default function RetirementPage() {
     if (portfolio) {
       fetchPlan();
     }
-  }, [portfolio, targetCorpus, realEstateYield, debtYield, equityYield]);
+  }, [portfolio, activeConfig]);
 
   useEffect(() => {
     setRefreshAction(() => async () => {
@@ -71,7 +89,13 @@ export default function RetirementPage() {
       await fetchPlan();
     });
     return () => setRefreshAction(null);
-  }, [setRefreshAction, targetCorpus, realEstateYield, debtYield, equityYield]);
+  }, [setRefreshAction, activeConfig]);
+
+  const handleSaveConfig = () => {
+    setActiveConfig(draftConfig);
+    localStorage.setItem("retirementSettings", JSON.stringify(draftConfig));
+    setShowSettings(false);
+  };
 
   if (loading || !plan) {
     return (
@@ -121,74 +145,54 @@ export default function RetirementPage() {
               <Settings2 className="h-4 w-4 text-blue-400" />
               Configuration & Assumptions
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="group">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Target Corpus (₹)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
                   <input 
                     type="number" 
-                    value={targetCorpus}
-                    onChange={(e) => {
-                       const v = Number(e.target.value);
-                       setTargetCorpus(v);
-                       localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus: v, realEstateYield, debtYield, equityYield }));
-                    }}
+                    value={draftConfig.targetCorpus}
+                    onChange={(e) => setDraftConfig({ ...draftConfig, targetCorpus: Number(e.target.value) })}
                     className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 pl-8 pr-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   />
                 </div>
               </div>
-              <div className="group">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-emerald-400 transition-colors">Real Estate Yield</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={Number((realEstateYield * 100).toFixed(1))}
-                    onChange={(e) => {
-                       const v = Number(e.target.value) / 100;
-                       setRealEstateYield(v);
-                       localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield: v, debtYield, equityYield }));
-                    }}
-                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
+              
+              {/* Asset Growth Assumptions */}
+              {[
+                { label: "Equity Growth", key: "equityYield" },
+                { label: "Real Estate Growth", key: "realEstateYield" },
+                { label: "Gold Growth", key: "goldYield" },
+                { label: "NPS Growth", key: "npsYield" },
+                { label: "EPF Growth", key: "epfYield" },
+                { label: "PPF Growth", key: "ppfYield" },
+                { label: "Fixed Income Growth", key: "debtYield" },
+                { label: "Savings Bank Growth", key: "savingsYield" },
+              ].map((field) => (
+                <div key={field.key} className="group">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-emerald-400 transition-colors">{field.label}</label>
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      value={Number(((draftConfig as any)[field.key] * 100).toFixed(1))}
+                      onChange={(e) => setDraftConfig({ ...draftConfig, [field.key]: Number(e.target.value) / 100 })}
+                      className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
+                  </div>
                 </div>
-              </div>
-              <div className="group">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-emerald-400 transition-colors">Fixed Income Yield</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={Number((debtYield * 100).toFixed(1))}
-                    onChange={(e) => {
-                       const v = Number(e.target.value) / 100;
-                       setDebtYield(v);
-                       localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield, debtYield: v, equityYield }));
-                    }}
-                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
-                </div>
-              </div>
-              <div className="group">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-emerald-400 transition-colors">Equity Dividend Yield</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    value={Number((equityYield * 100).toFixed(1))}
-                    onChange={(e) => {
-                       const v = Number(e.target.value) / 100;
-                       setEquityYield(v);
-                       localStorage.setItem("retirementSettings", JSON.stringify({ targetCorpus, realEstateYield, debtYield, equityYield: v }));
-                    }}
-                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
-                </div>
-              </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t border-slate-800">
+              <button 
+                onClick={handleSaveConfig}
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/20"
+              >
+                Save Configuration
+              </button>
             </div>
           </div>
         )}
@@ -246,8 +250,8 @@ export default function RetirementPage() {
                   <TrendingUp className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Monthly Passive Income</h3>
-                  <p className="text-xs font-medium text-slate-500 mt-0.5">Estimated yields from assets</p>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Estimated Monthly Portfolio Growth</h3>
+                  <p className="text-xs font-medium text-slate-500 mt-0.5">Estimated total growth across assets</p>
                 </div>
               </div>
               
@@ -262,7 +266,7 @@ export default function RetirementPage() {
               
               <div className="mt-auto rounded-xl bg-slate-950/40 p-3 border border-slate-800/50 backdrop-blur-sm">
                 <p className="text-xs font-medium text-slate-400 leading-relaxed">
-                  Assumes <span className="text-slate-300 font-semibold">{(realEstateYield*100).toFixed(1)}%</span> Real Estate yield, <span className="text-slate-300 font-semibold">{(debtYield*100).toFixed(1)}%</span> Fixed Income interest, and <span className="text-slate-300 font-semibold">{(equityYield*100).toFixed(1)}%</span> average Equity dividend yield.
+                  Calculated based on your custom Configuration & Assumptions.
                 </p>
               </div>
             </div>

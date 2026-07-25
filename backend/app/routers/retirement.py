@@ -8,9 +8,14 @@ router = APIRouter(prefix="/retirement", tags=["retirement"])
 @router.get("/plan", response_model=RetirementPlan)
 async def get_retirement_plan(
     target_corpus: float = 100000000.0,
-    real_estate_yield: float = 0.03,
+    real_estate_yield: float = 0.08,
     debt_yield: float = 0.07,
-    equity_yield: float = 0.015,
+    equity_yield: float = 0.12,
+    epf_yield: float = 0.081,
+    ppf_yield: float = 0.071,
+    nps_yield: float = 0.10,
+    gold_yield: float = 0.10,
+    savings_yield: float = 0.03,
     email: str = Depends(verify_access)
 ):
     # Fetch the complete portfolio state using the existing function
@@ -48,12 +53,20 @@ async def get_retirement_plan(
             buckets[4].assets.append({"name": asset.name, "category": "Fixed Income", "value": val})
             asset_allocation["debt"] += val
         elif category in ["epf", "ppf", "nps"]:
+            if category == "epf":
+                monthly_passive_income += (val * epf_yield) / 12
+            elif category == "ppf":
+                monthly_passive_income += (val * ppf_yield) / 12
+            elif category == "nps":
+                monthly_passive_income += (val * nps_yield) / 12
             buckets[3].assets.append({"name": asset.name, "category": category.upper(), "value": val})
             asset_allocation["debt"] += val
         elif category == "savings_bank":
+            monthly_passive_income += (val * savings_yield) / 12
             buckets[1].assets.append({"name": asset.name, "category": "Savings Account", "value": val})
             asset_allocation["debt"] += val
         elif category == "gold":
+            monthly_passive_income += (val * gold_yield) / 12
             buckets[2].assets.append({"name": asset.name, "category": "Gold", "value": val})
             asset_allocation["gold"] += val
         elif category == "mutual_funds":
