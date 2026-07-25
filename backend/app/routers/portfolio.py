@@ -333,7 +333,6 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
             # Compute XIRR if cashflows are available
             if getattr(h, 'cashflows', None) and len(h.cashflows) > 0 and h.quantity > 0:
                 from app.utils.math_utils import calculate_xirr
-                from datetime import datetime
                 
                 try:
                     # Copy cashflows
