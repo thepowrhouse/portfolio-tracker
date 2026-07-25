@@ -16,6 +16,11 @@ interface RetirementPlan {
   total_corpus: number;
   target_corpus: number;
   estimated_monthly_passive_income: number;
+  drawing_capacity_per_month: number;
+  monthly_expenses: number;
+  current_age: number;
+  years_to_live: number;
+  financial_independence_status: string;
   withdrawal_strategy: WithdrawalBucket[];
   recommendations: string[];
 }
@@ -33,7 +38,11 @@ export default function RetirementPage() {
     ppfYield: 0.071,
     npsYield: 0.10,
     goldYield: 0.10,
-    savingsYield: 0.03
+    savingsYield: 0.03,
+    dob: "1990-01-01",
+    monthlyExpenses: 100000.0,
+    lifespan: 85,
+    inflationRate: 0.06
   };
 
   const [activeConfig, setActiveConfig] = useState(defaultConfig);
@@ -49,12 +58,12 @@ export default function RetirementPage() {
         const parsed = JSON.parse(saved);
         const merged = { ...defaultConfig };
         for (const key in parsed) {
-          if (
-            parsed[key] !== null && 
-            parsed[key] !== undefined && 
-            !Number.isNaN(Number(parsed[key]))
-          ) {
-            (merged as any)[key] = Number(parsed[key]);
+          if (parsed[key] !== null && parsed[key] !== undefined) {
+            if (key === "dob") {
+              merged.dob = parsed[key];
+            } else if (!Number.isNaN(Number(parsed[key]))) {
+              (merged as any)[key] = Number(parsed[key]);
+            }
           }
         }
         setActiveConfig(merged);
@@ -76,6 +85,10 @@ export default function RetirementPage() {
         nps_yield: (configToUse.npsYield || 0.1).toString(),
         gold_yield: (configToUse.goldYield || 0.1).toString(),
         savings_yield: (configToUse.savingsYield || 0.03).toString(),
+        dob: configToUse.dob || "1990-01-01",
+        monthly_expenses: (configToUse.monthlyExpenses || 100000).toString(),
+        lifespan: (configToUse.lifespan || 85).toString(),
+        inflation_rate: (configToUse.inflationRate || 0.06).toString(),
       });
       const data = await api.get<RetirementPlan>(`/retirement/plan?${params.toString()}`);
       setPlan(data);
@@ -156,6 +169,53 @@ export default function RetirementPage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="group">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Date of Birth</label>
+                <div className="relative">
+                  <input 
+                    type="date" 
+                    value={draftConfig.dob}
+                    onChange={(e) => setDraftConfig({ ...draftConfig, dob: e.target.value })}
+                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="group">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Monthly Expenses (₹)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
+                  <input 
+                    type="number" 
+                    value={draftConfig.monthlyExpenses}
+                    onChange={(e) => setDraftConfig({ ...draftConfig, monthlyExpenses: Number(e.target.value) })}
+                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 pl-8 pr-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="group">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Expected Lifespan (Years)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    value={draftConfig.lifespan}
+                    onChange={(e) => setDraftConfig({ ...draftConfig, lifespan: Number(e.target.value) })}
+                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="group">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Inflation Rate (%)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    value={Number((draftConfig.inflationRate * 100).toFixed(1))}
+                    onChange={(e) => setDraftConfig({ ...draftConfig, inflationRate: Number(e.target.value) / 100 })}
+                    className="w-full bg-slate-950/50 border border-slate-700/70 rounded-xl py-2.5 px-3 text-slate-200 text-sm font-semibold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">%</span>
+                </div>
+              </div>
+              <div className="group">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 group-focus-within:text-blue-400 transition-colors">Target Corpus (₹)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
@@ -206,7 +266,7 @@ export default function RetirementPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Corpus Progress */}
           <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-xl flex flex-col justify-center min-h-[200px] hover:shadow-2xl transition-all hover:-translate-y-1">
             <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-blue-500 blur-3xl opacity-10" />
@@ -259,7 +319,7 @@ export default function RetirementPage() {
                   <TrendingUp className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Estimated Monthly Portfolio Growth</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Monthly Growth</h3>
                   <p className="text-xs font-medium text-slate-500 mt-0.5">Estimated total growth across assets</p>
                 </div>
               </div>
@@ -277,6 +337,56 @@ export default function RetirementPage() {
                 <p className="text-xs font-medium text-slate-400 leading-relaxed">
                   Calculated based on your custom Configuration & Assumptions.
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Drawing Capacity */}
+          <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-xl flex flex-col justify-center min-h-[200px] hover:shadow-2xl transition-all hover:-translate-y-1">
+            <div className={`absolute top-0 right-0 h-32 w-32 rounded-full blur-3xl opacity-10 ${
+              plan.financial_independence_status === "Shortfall" ? "bg-red-500" : "bg-emerald-500"
+            }`} />
+            
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-inner ${
+                    plan.financial_independence_status === "Shortfall" ? "bg-red-500/20" : "bg-emerald-500/20"
+                  }`}>
+                    <WalletCards className={`h-6 w-6 ${
+                      plan.financial_independence_status === "Shortfall" ? "text-red-400" : "text-emerald-400"
+                    }`} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">Drawing Capacity</h3>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">If you retired today for {plan.years_to_live} years</p>
+                  </div>
+                </div>
+                {plan.financial_independence_status.includes("Achieved") ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                    <CheckCircle2 className="h-3 w-3" /> FI Achieved
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
+                    <AlertCircle className="h-3 w-3" /> Shortfall
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-auto mb-4">
+                <div className="flex items-baseline">
+                  <span className={`text-5xl font-extrabold tabular-nums text-transparent bg-clip-text drop-shadow-sm ${
+                    plan.financial_independence_status === "Shortfall" ? "bg-gradient-to-r from-red-400 to-orange-300" : "bg-gradient-to-r from-emerald-400 to-teal-300"
+                  }`}>
+                    ₹{plan.drawing_capacity_per_month.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-sm font-medium text-slate-500 ml-3">/ month</span>
+                </div>
+              </div>
+              
+              <div className="mt-auto flex items-center justify-between rounded-xl bg-slate-950/40 p-3 border border-slate-800/50 backdrop-blur-sm">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Expenses</span>
+                <span className="text-sm font-bold text-slate-200">₹{plan.monthly_expenses.toLocaleString("en-IN", { maximumFractionDigits: 0 })}/mo</span>
               </div>
             </div>
           </div>

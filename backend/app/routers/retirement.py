@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from typing import List, Dict, Any
+from datetime import datetime
 from app.models import RetirementPlan, WithdrawalBucket
 from app.routers.portfolio import verify_access, get_portfolio_state
 
@@ -16,6 +17,10 @@ async def get_retirement_plan(
     nps_yield: float = 0.10,
     gold_yield: float = 0.10,
     savings_yield: float = 0.03,
+    dob: str = "1990-01-01",
+    monthly_expenses: float = 100000.0,
+    lifespan: int = 85,
+    inflation_rate: float = 0.06,
     email: str = Depends(verify_access)
 ):
     # Fetch the complete portfolio state using the existing function
@@ -126,10 +131,55 @@ async def get_retirement_plan(
     elif total_corpus >= target_corpus:
         recommendations.append("🎉 Congratulations! You have reached your target retirement corpus.")
 
+    # Calculate Age & Lifespan
+    try:
+        birth_date = datetime.strptime(dob, "%Y-%m-%d")
+        current_age = (datetime.utcnow() - birth_date).days // 365
+    except:
+        current_age = 35
+
+    years_to_live = max(1, lifespan - current_age)
+
+    # Drawing Capacity Calculation (PMT)
+    # Calculate Blended Yield
+    blended_yield = (monthly_passive_income * 12) / total_corpus if total_corpus > 0 else 0
+    # Real return (Yield - Inflation)
+    real_rate = max(-0.02, ((1 + blended_yield) / (1 + inflation_rate)) - 1)
+    
+    monthly_real_rate = real_rate / 12
+    total_months = years_to_live * 12
+    
+    if monthly_real_rate == 0:
+        drawing_capacity_per_month = total_corpus / total_months
+    else:
+        # PMT = P * (r(1+r)^n) / ((1+r)^n - 1)
+        r = monthly_real_rate
+        n = total_months
+        drawing_capacity_per_month = total_corpus * (r * (1 + r)**n) / ((1 + r)**n - 1)
+        
+    financial_independence_status = "On Track"
+    if drawing_capacity_per_month > monthly_expenses * 1.5:
+        financial_independence_status = "Achieved (Abundant)"
+    elif drawing_capacity_per_month >= monthly_expenses:
+        financial_independence_status = "Achieved"
+    elif drawing_capacity_per_month < monthly_expenses * 0.5:
+        financial_independence_status = "Shortfall"
+        
+    # Inject FI recommendations
+    if financial_independence_status in ["Achieved", "Achieved (Abundant)"]:
+        recommendations.insert(0, f"🌟 You are Financially Independent! Your safe withdrawal capacity (₹{drawing_capacity_per_month:,.0f}/mo) exceeds your current expenses.")
+    elif financial_independence_status == "Shortfall":
+        recommendations.append(f"⚠️ Your current corpus would only safely yield ₹{drawing_capacity_per_month:,.0f}/mo. You need to close the gap to reach ₹{monthly_expenses:,.0f}/mo.")
+
     return RetirementPlan(
         total_corpus=total_corpus,
         target_corpus=target_corpus,
         estimated_monthly_passive_income=monthly_passive_income,
+        drawing_capacity_per_month=drawing_capacity_per_month,
+        monthly_expenses=monthly_expenses,
+        current_age=current_age,
+        years_to_live=years_to_live,
+        financial_independence_status=financial_independence_status,
         withdrawal_strategy=list(buckets.values()),
         recommendations=recommendations
     )

@@ -236,5 +236,10 @@ class RetirementPlan(BaseModel):
     total_corpus: float
     target_corpus: float
     estimated_monthly_passive_income: float
+    drawing_capacity_per_month: float
+    monthly_expenses: float
+    current_age: int
+    years_to_live: int
+    financial_independence_status: str
     withdrawal_strategy: List[WithdrawalBucket]
     recommendations: List[str]
