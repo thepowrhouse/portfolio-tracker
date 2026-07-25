@@ -537,14 +537,63 @@ async def reset_portfolio(email: str = Depends(verify_access)):
         
     return {"message": "Portfolio reset successfully"}
 
+def _update_other_assets_cache(email: str):
+    if email not in _portfolio_cache:
+        return
+        
+    cached_state, timestamp = _portfolio_cache[email]
+    
+    other_assets_data = get_other_assets(email)
+    other_assets = []
+    for asset_dict in other_assets_data:
+        asset = OtherAsset(**asset_dict)
+        if asset.invested_value is not None and asset.invested_value > 0:
+            asset.pnl_absolute = asset.value - asset.invested_value
+            asset.pnl_percent = (asset.pnl_absolute / asset.invested_value) * 100
+        
+        if asset.invested_value is not None and asset.investment_date is not None and asset.invested_value > 0:
+            try:
+                from app.utils.math_utils import calculate_xirr
+                inv_date = datetime.fromisoformat(asset.investment_date)
+                cfs = [
+                    (inv_date, -asset.invested_value),
+                    (datetime.utcnow(), asset.value)
+                ]
+                xirr_rate = calculate_xirr(cfs)
+                if xirr_rate is not None:
+                    asset.xirr = round(xirr_rate * 100, 2)
+            except Exception:
+                pass
+        other_assets.append(asset)
+        
+    cached_state.other_assets = other_assets
+    
+    net_worth = 0
+    for h in cached_state.holdings:
+        val = (h.current_price or h.avg_price) * h.quantity
+        if h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
+            val *= cached_state.usd_to_inr
+        net_worth += val
+        
+    for asset in other_assets:
+        val = asset.value
+        if asset.currency == "USD":
+            val *= cached_state.usd_to_inr
+        net_worth += val
+        
+    cached_state.net_worth_inr = round(net_worth, 2)
+    if cached_state.usd_to_inr > 0:
+        cached_state.net_worth_usd = round(net_worth / cached_state.usd_to_inr, 2)
+    
+    _portfolio_cache[email] = (cached_state, timestamp)
+
 @router.post("/other-assets", response_model=OtherAsset)
 async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verify_access)):
     from uuid import uuid4
     asset_id = str(uuid4())
     add_other_asset(asset_id, email, asset.category.value, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
     
-    if email in _portfolio_cache:
-        del _portfolio_cache[email]
+    _update_other_assets_cache(email)
         
     return OtherAsset(
         id=asset_id,
@@ -563,8 +612,7 @@ async def create_other_asset(asset: OtherAssetCreate, email: str = Depends(verif
 async def modify_other_asset(asset_id: str, asset: OtherAssetUpdate, email: str = Depends(verify_access)):
     update_other_asset(asset_id, email, asset.name, asset.value, asset.currency, asset.invested_value, asset.investment_date)
     
-    if email in _portfolio_cache:
-        del _portfolio_cache[email]
+    _update_other_assets_cache(email)
         
     return {"message": "Asset updated successfully"}
 
@@ -572,7 +620,6 @@ async def modify_other_asset(asset_id: str, asset: OtherAssetUpdate, email: str 
 async def remove_other_asset(asset_id: str, email: str = Depends(verify_access)):
     delete_other_asset(asset_id, email)
     
-    if email in _portfolio_cache:
-        del _portfolio_cache[email]
+    _update_other_assets_cache(email)
         
     return {"message": "Asset deleted successfully"}

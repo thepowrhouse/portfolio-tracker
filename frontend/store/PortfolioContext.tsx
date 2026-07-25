@@ -157,7 +157,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const addOtherAsset = useCallback(async (asset: any) => {
     try {
       await api.post("/portfolio/other-assets", asset);
-      await refreshPortfolio(true);
+      await refreshPortfolio(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add other asset");
       throw err;
@@ -167,7 +167,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const updateOtherAsset = useCallback(async (id: string, asset: any) => {
     try {
       await api.put(`/portfolio/other-assets/${id}`, asset);
-      await refreshPortfolio(true);
+      await refreshPortfolio(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update other asset");
       throw err;
@@ -177,7 +177,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const deleteOtherAsset = useCallback(async (id: string) => {
     try {
       await api.delete(`/portfolio/other-assets/${id}`);
-      await refreshPortfolio(true);
+      await refreshPortfolio(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete other asset");
       throw err;
