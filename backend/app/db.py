@@ -62,6 +62,36 @@ def init_db():
         )
     """)
     
+    # Create user_holdings table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_holdings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            ticker TEXT NOT NULL,
+            company_name TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            avg_price REAL NOT NULL,
+            currency TEXT NOT NULL,
+            asset_class TEXT NOT NULL,
+            broker TEXT NOT NULL,
+            is_order_history BOOLEAN NOT NULL DEFAULT 0,
+            last_updated TEXT NOT NULL
+        )
+    """)
+    
+    # Create market_data table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS market_data (
+            ticker TEXT PRIMARY KEY,
+            current_price REAL,
+            previous_close REAL,
+            day_change REAL,
+            day_change_percent REAL,
+            currency TEXT,
+            last_updated TEXT NOT NULL
+        )
+    """)
+    
     try:
         cursor.execute("ALTER TABLE user_access ADD COLUMN name TEXT")
     except sqlite3.OperationalError:
@@ -315,3 +345,91 @@ def delete_other_asset(asset_id: str, email: str):
     cursor.execute("DELETE FROM other_assets WHERE id = ? AND email = ?", (asset_id, email))
     conn.commit()
     conn.close()
+
+# ==================== User Holdings CRUD ====================
+
+def save_user_holdings(email: str, holdings: List[Any]):
+    """Replaces all holdings for a user with the newly reconciled list."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Delete old holdings for this user
+    cursor.execute("DELETE FROM user_holdings WHERE email = ?", (email,))
+    
+    # Insert new ones
+    now = datetime.utcnow().isoformat()
+    for h in holdings:
+        cursor.execute(
+            """
+            INSERT INTO user_holdings 
+            (email, ticker, company_name, quantity, avg_price, currency, asset_class, broker, is_order_history, last_updated)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (email, h.ticker, h.company_name, h.quantity, h.avg_price, h.currency, 
+             h.asset_class.value if hasattr(h.asset_class, 'value') else h.asset_class,
+             h.broker.value if hasattr(h.broker, 'value') else h.broker,
+             h.is_order_history, now)
+        )
+    conn.commit()
+    conn.close()
+
+def get_user_holdings(email: str) -> List[Dict[str, Any]]:
+    """Get the saved holdings for a user."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_holdings WHERE email = ?", (email,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def get_all_unique_tickers() -> List[str]:
+    """Get all unique tickers across all users for the background poller."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT ticker FROM user_holdings")
+    rows = cursor.fetchall()
+    conn.close()
+    return [r[0] for r in rows]
+
+# ==================== Market Data CRUD ====================
+
+def update_market_data(ticker: str, current_price: float, previous_close: float, currency: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    day_change = current_price - previous_close if previous_close else 0.0
+    day_change_percent = (day_change / previous_close) * 100 if previous_close else 0.0
+    now = datetime.utcnow().isoformat()
+    
+    cursor.execute(
+        """
+        INSERT INTO market_data 
+        (ticker, current_price, previous_close, day_change, day_change_percent, currency, last_updated)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(ticker) DO UPDATE SET
+            current_price=excluded.current_price,
+            previous_close=excluded.previous_close,
+            day_change=excluded.day_change,
+            day_change_percent=excluded.day_change_percent,
+            currency=excluded.currency,
+            last_updated=excluded.last_updated
+        """,
+        (ticker, current_price, previous_close, day_change, day_change_percent, currency, now)
+    )
+    conn.commit()
+    conn.close()
+
+def get_market_data(tickers: List[str]) -> Dict[str, Dict[str, Any]]:
+    if not tickers:
+        return {}
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    placeholders = ",".join("?" * len(tickers))
+    cursor.execute(f"SELECT * FROM market_data WHERE ticker IN ({placeholders})", tuple(tickers))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return {row["ticker"]: dict(row) for row in rows}

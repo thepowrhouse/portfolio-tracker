@@ -214,139 +214,123 @@ def enrich_holdings(holdings: List[PortfolioHolding]) -> List[PortfolioHolding]:
 
 @router.get("/state", response_model=PortfolioState)
 async def get_portfolio_state(force: bool = False, email: str = Depends(verify_access)):
-    """Get the current state of the portfolio including real-time prices."""
+    """Get the current state of the portfolio from the DB cache."""
     global _usd_to_inr
     
-    # Check cache
-    if not force and email in _portfolio_cache:
-        cached_data, timestamp = _portfolio_cache[email]
-        if time.time() - timestamp < CACHE_TTL:
-            return cached_data
+    # 1. Fetch User Holdings from DB
+    from app.db import get_user_holdings, get_market_data, get_other_assets, update_market_data
+    from app.models import PortfolioHolding, OtherAsset
+    import yfinance as yf
     
-    # 1. Get uploaded holdings
-    uploaded_holdings = _portfolio_db.get(email, [])
-    print(f"GET STATE DEBUG: email={email}, len(uploaded_holdings) from DB={len(uploaded_holdings)}")
+    raw_holdings = get_user_holdings(email)
+    holdings = []
+    tickers_to_fetch = set()
     
-    if not uploaded_holdings:
-        import os
-        import sqlite3
-        from app.db import DB_PATH
-        from app.services.csv_parser import parse_csv_by_broker
-        from app.models import BrokerType
-        from app.services.reconciler import reconcile_portfolio
-
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT broker, file_path FROM user_uploads WHERE email = ? ORDER BY timestamp DESC", (email,))
-        rows = cursor.fetchall()
-        conn.close()
-
-        latest_snapshot = {}
-        latest_tradebook = {}
-
-        for row in rows:
-            broker_str = row["broker"]
-            file_path = row["file_path"]
+    for r in raw_holdings:
+        yf_ticker = r['ticker']
+        if r['asset_class'] == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
+        tickers_to_fetch.add(yf_ticker)
             
-            # Stop parsing for a broker if we already have both its snapshot and tradebook
-            if broker_str in latest_snapshot and broker_str in latest_tradebook:
-                continue
-
-            if file_path and os.path.exists(file_path):
+        h = PortfolioHolding(
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            currency=r['currency'],
+            asset_class=r['asset_class'],
+            broker=r['broker'],
+            is_order_history=r['is_order_history'],
+            current_price=r['avg_price'],
+            pnl_absolute=0.0,
+            pnl_percent=0.0,
+            day_change_absolute=0.0,
+            day_change_percent=0.0,
+            xirr=None,
+            cashflows=[]
+        )
+        holdings.append(h)
+        
+    # If forced refresh, hit Yahoo Finance and update MarketData DB
+    if force and tickers_to_fetch:
+        try:
+            tickers_list = list(tickers_to_fetch)
+            tickers_list.append("INR=X")
+            data = yf.download(tickers_list, period="5d", group_by="ticker", threads=True, progress=False)
+            
+            for ticker in tickers_list:
                 try:
-                    with open(file_path, "rb") as f:
-                        contents = f.read()
-                    broker_enum = BrokerType(broker_str)
-                    csv_holdings = parse_csv_by_broker(contents, broker_enum)
-                    
-                    if not csv_holdings:
-                        continue
+                    if len(tickers_list) == 1:
+                        ticker_data = data
+                    else:
+                        ticker_data = data[ticker]
                         
-                    is_history = getattr(csv_holdings[0], 'is_order_history', False)
-                    
-                    if is_history and broker_str not in latest_tradebook:
-                        latest_tradebook[broker_str] = csv_holdings
-                    elif not is_history and broker_str not in latest_snapshot:
-                        # Convert INDmoney INR prices to USD
-                        for h in csv_holdings:
-                            if h.broker == BrokerType.INDMONEY and h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
-                                if _usd_to_inr > 0:
-                                    h.avg_price = round(h.avg_price / _usd_to_inr, 4)
-                        latest_snapshot[broker_str] = csv_holdings
+                    closes = ticker_data['Close'].dropna()
+                    if len(closes) >= 1:
+                        current_price = float(closes.iloc[-1])
+                        prev_close = float(closes.iloc[-2]) if len(closes) >= 2 else current_price
+                        update_market_data(ticker, current_price, prev_close, "INR" if ".NS" in ticker else "USD")
                 except Exception as e:
-                    print(f"Failed to parse cached file for {broker_str}: {e}")
-
-        restored_holdings = []
-        
-        # Step 1: Apply all Holdings Snapshots first
-        for broker_str, csv_holdings in latest_snapshot.items():
-            try:
-                broker_enum = BrokerType(broker_str)
-                restored_holdings = reconcile_portfolio(restored_holdings, csv_holdings, broker_enum)
-            except Exception as e:
-                print(f"Failed to restore snapshot for {broker_str}: {e}")
-                
-        # Step 2: Apply all Order History / Tradebooks to update cashflows
-        for broker_str, csv_holdings in latest_tradebook.items():
-            try:
-                broker_enum = BrokerType(broker_str)
-                restored_holdings = reconcile_portfolio(restored_holdings, csv_holdings, broker_enum)
-            except Exception as e:
-                print(f"Failed to restore tradebook for {broker_str}: {e}")
-
-        if restored_holdings:
-            _portfolio_db[email] = restored_holdings
-            uploaded_holdings = restored_holdings
-                
-    rate = await get_forex_rate()
-    enriched = enrich_holdings(uploaded_holdings)
+                    pass
+        except Exception as e:
+            print(f"Force fetch failed: {e}")
+            
+    # 2. Fetch Market Data from DB
+    market_data = get_market_data(list(tickers_to_fetch) + ["INR=X"])
     
-    net_worth = 0
-    for h in enriched:
-        val = (h.current_price or h.avg_price) * h.quantity
-        if h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY"):
-            val *= _usd_to_inr
-        net_worth += val
+    # Also fetch forex
+    if "INR=X" in market_data and market_data["INR=X"]["current_price"]:
+        _usd_to_inr = market_data["INR=X"]["current_price"]
         
-    other_assets_data = get_other_assets(email)
-    other_assets = []
-    for asset_dict in other_assets_data:
-        asset = OtherAsset(**asset_dict)
-        
-        if asset.invested_value is not None and asset.invested_value > 0:
-            asset.pnl_absolute = asset.value - asset.invested_value
-            asset.pnl_percent = (asset.pnl_absolute / asset.invested_value) * 100
+    # 3. Enrich Holdings with Market Data
+    for h in holdings:
+        yf_ticker = h.ticker
+        if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+            yf_ticker += ".NS"
+            
+        md = market_data.get(yf_ticker)
+        if md and md.get("current_price"):
+            h.current_price = md["current_price"]
+            prev_close = md["previous_close"]
+            
+            h.pnl_absolute = round((h.current_price - h.avg_price) * h.quantity, 2)
+            h.pnl_percent = round((h.current_price - h.avg_price) / h.avg_price * 100, 2) if h.avg_price > 0 else 0
+            
+            if prev_close and prev_close > 0:
+                h.day_change_absolute = round((h.current_price - prev_close) * h.quantity, 2)
+                h.day_change_percent = round((h.current_price - prev_close) / prev_close * 100, 2)
                 
-        if asset.invested_value is not None and asset.investment_date is not None and asset.invested_value > 0:
-            try:
-                from app.utils.math_utils import calculate_xirr
-                inv_date = datetime.fromisoformat(asset.investment_date)
-                cfs = [
-                    (inv_date, -asset.invested_value),
-                    (datetime.utcnow(), asset.value)
-                ]
-                xirr_rate = calculate_xirr(cfs)
-                if xirr_rate is not None:
-                    asset.xirr = round(xirr_rate * 100, 2)
-            except Exception as e:
-                print(f"Error calculating XIRR for {asset.name}: {e}")
-                
-        other_assets.append(asset)
-        val = asset.value
-        if asset.currency == "USD":
-            val *= rate
-        net_worth += val
+    # 4. Fetch Other Assets
+    other_assets = get_other_assets(email)
+    other_assets_list = []
     
+    for o in other_assets:
+        other_assets_list.append(OtherAsset(
+            id=o['id'],
+            category=o['category'],
+            name=o['name'],
+            value=o['value'],
+            currency=o['currency'],
+            invested_value=o.get('invested_value'),
+            investment_date=o.get('investment_date'),
+            previous_value=o.get('previous_value'),
+            last_updated=o['last_updated']
+        ))
+        
+    # Calculate Net Worth
+    total_inr = 0.0
+    total_inr += sum([(h.current_price * h.quantity) if h.asset_class != "us_equity" and h.asset_class != "US_EQUITY" else (h.current_price * h.quantity * _usd_to_inr) for h in holdings])
+    for o in other_assets_list:
+        total_inr += o.value if o.currency == "INR" else (o.value * _usd_to_inr)
+        
     state = PortfolioState(
-        holdings=enriched,
-        other_assets=other_assets,
-        net_worth_inr=round(net_worth, 2),
-        net_worth_usd=round(net_worth / rate, 2),
-        last_sync=datetime.utcnow(),
-        usd_to_inr=rate
+        holdings=holdings,
+        other_assets=other_assets_list,
+        usd_to_inr=_usd_to_inr,
+        net_worth_inr=round(total_inr, 2),
+        net_worth_usd=round(total_inr / _usd_to_inr, 2) if _usd_to_inr else 0.0,
+        last_sync=datetime.utcnow()
     )
-    _portfolio_cache[email] = (state, time.time())
     return state
 
 @router.get("/quant", response_model=PortfolioQuantMetrics)
@@ -434,24 +418,43 @@ async def sync_portfolio(
 ):
     """
     CRITICAL ENDPOINT: CSV Upload + Reconciliation.
-    1. Parse CSV by broker format
-    2. Reconcile with current state (delete missing, add new, update qty)
-    3. Return new state
     """
-    global _portfolio_db
-    user_portfolio = _portfolio_db[email]
+    from app.db import get_user_holdings, save_user_holdings, log_upload
+    from app.services.csv_parser import parse_csv_by_broker
+    from app.services.reconciler import reconcile_portfolio
+    from app.models import PortfolioHolding
+    import os
+    
+    # 1. Fetch current holdings to reconcile against
+    raw_holdings = get_user_holdings(email)
+    user_portfolio = []
+    for r in raw_holdings:
+        h = PortfolioHolding(
+            ticker=r['ticker'],
+            company_name=r['company_name'],
+            quantity=r['quantity'],
+            avg_price=r['avg_price'],
+            currency=r['currency'],
+            asset_class=r['asset_class'],
+            broker=r['broker'],
+            is_order_history=r['is_order_history'],
+            current_price=r['avg_price'],
+            pnl_absolute=0.0,
+            pnl_percent=0.0,
+            day_change_absolute=0.0,
+            day_change_percent=0.0
+        )
+        user_portfolio.append(h)
     
     contents = await file.read()
     
     try:
         csv_holdings = parse_csv_by_broker(contents, broker)
-    except CSVParseError as e:
+    except Exception as e:
         raise HTTPException(400, detail=str(e))
     
     # Reconcile
     try:
-        # Before reconciling, ensure INDmoney US Equity snapshot values are converted to USD
-        # since the snapshot CSV has them in INR, but we want to store native USD internally
         for h in csv_holdings:
             if h.broker == BrokerType.INDMONEY and h.asset_class in (AssetClass.US_EQUITY, "us_equity", "US_EQUITY") and not getattr(h, 'is_order_history', False):
                 if _usd_to_inr > 0:
@@ -461,13 +464,8 @@ async def sync_portfolio(
     except ValueError as e:
         raise HTTPException(400, detail=str(e))
         
-    user_portfolio.clear()
-    user_portfolio.extend(new_holdings)
-    
-    print(f"SYNC DEBUG: parsed {len(csv_holdings)} from CSV. New holdings total: {len(new_holdings)}. user_portfolio len: {len(user_portfolio)}")
-    
-    # Enrich with prices
-    enriched = enrich_holdings(user_portfolio)
+    # Save the new reconciled holdings to the DB!
+    save_user_holdings(email, new_holdings)
     
     # Log the upload activity and save file
     if email and email != "anonymous":
@@ -477,21 +475,9 @@ async def sync_portfolio(
             f.write(contents)
         log_upload(email, broker.value, len(csv_holdings), file_path, session_id)
         
-    if email in _portfolio_cache:
-        del _portfolio_cache[email]
-        
     return {
         "message": f"Synced {len(csv_holdings)} holdings from {broker.value}",
-        "added": len([h for h in csv_holdings if not any(
-            existing.ticker == h.ticker and existing.broker == h.broker 
-            for existing in user_portfolio
-        )]),
-        "updated": len([h for h in csv_holdings if any(
-            existing.ticker == h.ticker and existing.broker == h.broker 
-            for existing in user_portfolio
-        )]),
-        "deleted": len(user_portfolio) - len(csv_holdings) if len(user_portfolio) > len(csv_holdings) else 0,
-        "holdings": enriched
+        "total_holdings_now": len(new_holdings)
     }
 
 @router.post("/manual")
