@@ -477,6 +477,18 @@ async def sync_portfolio(
     raw_holdings = get_user_holdings(email)
     user_portfolio = []
     for r in raw_holdings:
+        import json
+        cfs_list = []
+        if r.get('cashflows'):
+            try:
+                from app.models import Cashflow
+                import dateutil.parser
+                cfs_raw = json.loads(r['cashflows'])
+                for cf in cfs_raw:
+                    cfs_list.append(Cashflow(date=dateutil.parser.parse(cf['date']), amount=float(cf['amount'])))
+            except Exception as e:
+                print(f"Error parsing cashflows for {r['ticker']} in sync: {e}")
+                
         h = PortfolioHolding(
             id=str(r['id']),
             ticker=r['ticker'],
@@ -489,7 +501,8 @@ async def sync_portfolio(
             pnl_absolute=0.0,
             pnl_percent=0.0,
             day_change_absolute=0.0,
-            day_change_percent=0.0
+            day_change_percent=0.0,
+            cashflows=cfs_list
         )
         user_portfolio.append(h)
     
