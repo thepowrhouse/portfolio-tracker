@@ -330,6 +330,24 @@ async def get_portfolio_state(force: bool = False, email: str = Depends(verify_a
                 h.day_change_absolute = round((h.current_price - prev_close) * h.quantity, 2)
                 h.day_change_percent = round((h.current_price - prev_close) / prev_close * 100, 2)
                 
+            # Compute XIRR if cashflows are available
+            if getattr(h, 'cashflows', None) and len(h.cashflows) > 0 and h.quantity > 0:
+                from app.utils.math_utils import calculate_xirr
+                from datetime import datetime
+                
+                try:
+                    # Copy cashflows
+                    cfs = [(cf.date, cf.amount) for cf in h.cashflows]
+                    
+                    # Add final cashflow (current portfolio value)
+                    cfs.append((datetime.utcnow(), h.quantity * h.current_price))
+                    
+                    rate = calculate_xirr(cfs)
+                    if rate is not None:
+                        h.xirr = round(rate * 100, 2)
+                except Exception as e:
+                    print(f"Error calculating XIRR for {h.ticker}: {e}")
+                
     # 4. Fetch Other Assets
     other_assets = get_other_assets(email)
     other_assets_list = []
@@ -484,29 +502,32 @@ async def sync_portfolio(
     except Exception as e:
         raise HTTPException(400, detail=str(e))
         
-    # 3. Resolve missing company names in parallel
-    import concurrent.futures
-    tickers_needing_names = set()
-    for h in csv_holdings:
-        if h.company_name == h.ticker:
-            yf_ticker = h.ticker
-            if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
-                yf_ticker += ".NS"
-            tickers_needing_names.add(yf_ticker)
-            
-    if tickers_needing_names:
-        name_map = {}
-        for yf_ticker in tickers_needing_names:
-            name_map[yf_ticker] = fetch_name_from_yahoo(yf_ticker)
-            
+    # 3. Resolve missing company names sequentially to avoid rate limiting
+    # Skip if this is a tradebook (order history) as we only care about cashflows
+    is_order_history = csv_holdings and getattr(csv_holdings[0], 'is_order_history', False)
+    
+    if not is_order_history:
+        tickers_needing_names = set()
         for h in csv_holdings:
             if h.company_name == h.ticker:
                 yf_ticker = h.ticker
                 if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
                     yf_ticker += ".NS"
-                fetched_name = name_map.get(yf_ticker)
-                if fetched_name and fetched_name != yf_ticker:
-                    h.company_name = fetched_name
+                tickers_needing_names.add(yf_ticker)
+                
+        if tickers_needing_names:
+            name_map = {}
+            for yf_ticker in tickers_needing_names:
+                name_map[yf_ticker] = fetch_name_from_yahoo(yf_ticker)
+                
+            for h in csv_holdings:
+                if h.company_name == h.ticker:
+                    yf_ticker = h.ticker
+                    if h.asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+                        yf_ticker += ".NS"
+                    fetched_name = name_map.get(yf_ticker)
+                    if fetched_name and fetched_name != yf_ticker:
+                        h.company_name = fetched_name
     
     # 4. Reconcile
     try:

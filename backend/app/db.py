@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 DB_PATH = os.environ.get("SQLITE_DB_PATH", os.path.join(os.path.dirname(__file__), "activity.db"))
 
@@ -395,14 +395,14 @@ def get_user_holdings(email: str) -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
-def get_all_unique_tickers() -> List[str]:
-    """Get all unique tickers across all users for the background poller."""
+def get_all_unique_tickers() -> List[Tuple[str, str]]:
+    """Get all unique tickers and their asset classes across all users for the background poller."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT ticker FROM user_holdings")
+    cursor.execute("SELECT DISTINCT ticker, asset_class FROM user_holdings")
     rows = cursor.fetchall()
     conn.close()
-    return [r[0] for r in rows]
+    return [(r[0], r[1]) for r in rows]
 
 # ==================== Market Data CRUD ====================
 

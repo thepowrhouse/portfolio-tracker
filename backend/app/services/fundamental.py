@@ -6,6 +6,13 @@ Fetches P/E, D/E, EPS growth, ROE, and estimates intrinsic value.
 import yfinance as yf
 from typing import Optional
 from app.models import FundamentalMetrics
+import math
+
+def safe_round(val, ndigits=2):
+    try:
+        return round(float(val), ndigits) if val is not None else None
+    except (ValueError, TypeError):
+        return None
 
 def get_fundamental_analysis(ticker: str, asset_class: str) -> FundamentalMetrics:
     yf_ticker = ticker
@@ -65,12 +72,12 @@ def get_fundamental_analysis(ticker: str, asset_class: str) -> FundamentalMetric
         
         return FundamentalMetrics(
             ticker=ticker,
-            pe_ratio=round(pe_ratio, 2) if pe_ratio else None,
-            debt_to_equity=round(debt_to_equity, 2) if debt_to_equity else None,
-            eps_growth_yoy=round(eps_growth * 100, 2) if eps_growth else None,
-            roe=round(roe, 2) if roe else None,
-            intrinsic_value_estimate=round(intrinsic_value, 2) if intrinsic_value else None,
-            current_price=round(current_price, 2) if current_price else None,
+            pe_ratio=safe_round(pe_ratio, 2),
+            debt_to_equity=safe_round(debt_to_equity, 2),
+            eps_growth_yoy=safe_round(eps_growth * 100, 2) if eps_growth else None,
+            roe=safe_round(roe, 2),
+            intrinsic_value_estimate=safe_round(intrinsic_value, 2),
+            current_price=safe_round(current_price, 2),
             margin_of_safety=margin_of_safety,
             sector=sector,
             industry=industry,

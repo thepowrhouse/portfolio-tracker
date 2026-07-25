@@ -41,7 +41,15 @@ async def poll_market_data():
         try:
             tickers = get_all_unique_tickers()
             if tickers:
-                tickers_list = list(tickers)
+                tickers_list = []
+                # Map raw tickers to yfinance tickers
+                for raw_ticker, asset_class in tickers:
+                    yf_ticker = raw_ticker
+                    if asset_class == "indian_equity" and not yf_ticker.endswith(".NS") and not yf_ticker.endswith(".BO") and not yf_ticker.endswith(".BSE"):
+                        yf_ticker += ".NS"
+                    tickers_list.append(yf_ticker)
+                    
+                tickers_list = list(set(tickers_list)) # deduplicate
                 # Ensure we also get USD-INR forex rate
                 if "INR=X" not in tickers_list:
                     tickers_list.append("INR=X")
