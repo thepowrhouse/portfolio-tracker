@@ -41,8 +41,17 @@ export default function HoldingsScreen() {
     return (data?.holdings || []).filter(h => h.asset_class === filter);
   }, [data, filter]);
 
+  const usdToInr = data?.usd_to_inr || 1;
+
   const renderItem = ({ item }: { item: Holding }) => {
-    const isPositive = item.pnl_absolute >= 0;
+    let pnlAbsolute = item.pnl_absolute || 0;
+    let currentPrice = item.current_price;
+    if (item.asset_class === 'us_equity') {
+      pnlAbsolute *= usdToInr;
+      currentPrice *= usdToInr;
+    }
+    
+    const isPositive = pnlAbsolute >= 0;
     const isDayPositive = item.day_change_percent >= 0;
     
     return (
@@ -59,12 +68,12 @@ export default function HoldingsScreen() {
 
         <View className="items-end pl-2">
           <Text className="text-white font-bold tracking-tight">
-            ₹{(item.current_price * item.quantity).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            ₹{(currentPrice * item.quantity).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </Text>
           <View className="flex-row items-center mt-0.5">
             {isPositive ? <TrendingUp color="#34d399" size={12} /> : <TrendingDown color="#f87171" size={12} />}
             <Text className={`text-xs ml-1 font-semibold ${isPositive ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
-              {isPositive ? '+' : ''}₹{item.pnl_absolute.toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({item.pnl_percent.toFixed(2)}%)
+              {isPositive ? '+' : ''}₹{pnlAbsolute.toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({item.pnl_percent.toFixed(2)}%)
             </Text>
           </View>
         </View>

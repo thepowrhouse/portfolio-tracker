@@ -58,6 +58,7 @@ export interface PortfolioState {
   net_worth_inr?: number;
   net_worth_usd?: number;
   net_worth?: number;
+  usd_to_inr?: number;
   day_change?: number;
   total_pnl?: number;
   day_change_percent?: number;

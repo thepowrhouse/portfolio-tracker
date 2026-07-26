@@ -44,15 +44,27 @@ export default function DashboardScreen() {
 
   const netWorth = data?.net_worth_inr ?? data?.net_worth ?? 0;
   
-  const totalPnl = data?.total_pnl ?? data?.holdings?.reduce((sum, h) => sum + (h.pnl_absolute || 0), 0) ?? 0;
-  const dayChange = data?.day_change ?? data?.holdings?.reduce((sum, h) => sum + (h.day_change_absolute || 0), 0) ?? 0;
+  const usdToInr = data?.usd_to_inr || 1;
+
+  const totalPnl = data?.total_pnl ?? data?.holdings?.reduce((sum, h) => {
+    let pnl = h.pnl_absolute || 0;
+    if (h.asset_class === 'us_equity') pnl *= usdToInr;
+    return sum + pnl;
+  }, 0) ?? 0;
+
+  const dayChange = data?.day_change ?? data?.holdings?.reduce((sum, h) => {
+    let dc = h.day_change_absolute || 0;
+    if (h.asset_class === 'us_equity') dc *= usdToInr;
+    return sum + dc;
+  }, 0) ?? 0;
   
   const prevNetWorth = netWorth - dayChange;
   const dayChangePercent = data?.day_change_percent ?? (prevNetWorth > 0 ? (dayChange / prevNetWorth) * 100 : 0);
 
   // Calculate Asset Allocation
   const allocation = data?.holdings?.reduce((acc: Record<string, number>, h) => {
-    const value = h.current_price * h.quantity;
+    let value = h.current_price * h.quantity;
+    if (h.asset_class === 'us_equity') value *= usdToInr;
     acc[h.asset_class] = (acc[h.asset_class] || 0) + value;
     return acc;
   }, {}) || {};
@@ -135,7 +147,7 @@ export default function DashboardScreen() {
                   <Text className="text-[#64748b] text-xs">{h.company_name.substring(0, 20)}</Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-white font-medium">₹{h.current_price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
+                  <Text className="text-white font-medium">₹{(h.current_price * (h.asset_class === 'us_equity' ? usdToInr : 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
                   <Text className="text-[#34d399] text-xs font-semibold">+{h.day_change_percent.toFixed(2)}%</Text>
                 </View>
               </View>
