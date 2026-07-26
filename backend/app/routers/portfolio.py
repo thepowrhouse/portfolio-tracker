@@ -60,7 +60,7 @@ def get_user_email(authorization: str = Header(None)) -> str:
     
     try:
         payload = jwt.decode(token, secret, algorithms=["HS256"])
-        email = payload.get("email")
+        email = payload.get("email") or payload.get("sub")
         if not email:
             raise HTTPException(status_code=401, detail="Invalid token payload")
         return email
