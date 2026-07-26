@@ -10,22 +10,25 @@ def calculate_xirr(cashflows: List[Tuple[datetime, float]], guess: float = 0.1, 
         return None
         
     cashflows = sorted(cashflows, key=lambda x: x[0])
-    t0 = cashflows[0][0]
+    
+    # Ensure all datetimes are naive to prevent offset-naive vs offset-aware subtraction errors
+    cfs_naive = [(d.replace(tzinfo=None) if hasattr(d, 'replace') else d, cf) for d, cf in cashflows]
+    t0 = cfs_naive[0][0]
     
     # Check if we have both positive and negative cashflows
-    amounts = [cf[1] for cf in cashflows]
+    amounts = [cf[1] for cf in cfs_naive]
     if max(amounts) <= 0 or min(amounts) >= 0:
         return None
         
     def npv(rate: float) -> float:
         if rate <= -1.0:
             return float('inf')
-        return sum(cf / ((1.0 + rate) ** ((d - t0).days / 365.0)) for d, cf in cashflows)
+        return sum(cf / ((1.0 + rate) ** ((d - t0).days / 365.0)) for d, cf in cfs_naive)
         
     def dnpv(rate: float) -> float:
         if rate <= -1.0:
             return float('-inf')
-        return sum(cf * (-(d - t0).days / 365.0) / ((1.0 + rate) ** (((d - t0).days / 365.0) + 1.0)) for d, cf in cashflows)
+        return sum(cf * (-(d - t0).days / 365.0) / ((1.0 + rate) ** (((d - t0).days / 365.0) + 1.0)) for d, cf in cfs_naive)
         
     r = guess
     for _ in range(max_iter):

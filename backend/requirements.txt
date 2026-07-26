@@ -50,3 +50,10 @@ watchfiles==1.2.0
 websockets==16.0
 yfinance==1.5.1
 PyJWT
+
+google-auth>=2.0.0
+google-auth-oauthlib>=0.4.0
+requests>=2.25.0
+
+google-auth>=2.0.0
+requests>=2.25.0
