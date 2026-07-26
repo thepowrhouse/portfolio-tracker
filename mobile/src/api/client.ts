@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // In development, you might use your local machine's IP address if testing on a physical device.
 // e.g., 'http://172.16.9.3:8000'
 // You can also use an ngrok URL here if you prefer.
-export const API_BASE_URL = 'http://192.168.29.5:8000';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
