@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPortfolio, PortfolioState, OtherAsset } from '../../api/client';
-import { Landmark, Coins, Home, CircleDollarSign } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function OtherAssetsScreen() {
   const [data, setData] = useState<PortfolioState | null>(null);
@@ -32,10 +32,12 @@ export default function OtherAssetsScreen() {
 
   const getIconForCategory = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'gold': return <Coins color="#fbbf24" size={24} />;
-      case 'real_estate': return <Home color="#60a5fa" size={24} />;
-      case 'mutual_funds': return <Landmark color="#34d399" size={24} />;
-      default: return <CircleDollarSign color="#a78bfa" size={24} />;
+      case 'mutual_funds': return <Feather name="pie-chart" color="#8b5cf6" size={24} />;
+    case 'savings_bank': return <Feather name="briefcase" color="#10b981" size={24} />;
+    case 'ppf':
+    case 'epf':
+    case 'nps': return <Feather name="shield" color="#64748b" size={24} />;
+    default: return <Feather name="dollar-sign" color="#38bdf8" size={24} />;
     }
   };
 
@@ -76,7 +78,7 @@ export default function OtherAssetsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
         ListEmptyComponent={
           <View className="p-8 items-center justify-center mt-20">
-            <Landmark color="#334155" size={48} />
+            <Feather name="credit-card" color="#334155" size={48} />
             <Text className="text-[#64748b] font-medium text-lg mt-4">No other assets found.</Text>
             <Text className="text-[#475569] text-sm text-center mt-2">Go to the web dashboard to add them.</Text>
           </View>

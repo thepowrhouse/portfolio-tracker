@@ -61,6 +61,31 @@ export default function DashboardScreen() {
   const prevNetWorth = netWorth - dayChange;
   const dayChangePercent = data?.day_change_percent ?? (prevNetWorth > 0 ? (dayChange / prevNetWorth) * 100 : 0);
 
+  let weightedXirrSum = 0;
+  let investedWithXirr = 0;
+
+  data?.holdings?.forEach(h => {
+    let invested = h.avg_price * h.quantity;
+    if (h.asset_class === 'us_equity') invested *= usdToInr;
+
+    if (h.xirr != null) {
+      weightedXirrSum += h.xirr * invested;
+      investedWithXirr += invested;
+    }
+  });
+
+  data?.other_assets?.forEach(a => {
+    let invested = a.invested_value || 0;
+    if (a.currency === 'USD') invested *= usdToInr;
+
+    if (a.xirr != null && invested > 0) {
+      weightedXirrSum += a.xirr * invested;
+      investedWithXirr += invested;
+    }
+  });
+
+  const portfolioXirr = investedWithXirr > 0 ? (weightedXirrSum / investedWithXirr) : null;
+
   // Calculate Asset Allocation
   const allocation = data?.holdings?.reduce((acc: Record<string, number>, h) => {
     let value = h.current_price * h.quantity;
@@ -102,6 +127,15 @@ export default function DashboardScreen() {
               </Text>
             </View>
             <Text className="text-[#64748b] text-xs ml-2 font-medium">Today</Text>
+            
+            {portfolioXirr !== null && (
+              <View className="ml-auto flex-row items-center bg-[#1e293b] px-2 py-1 rounded-md border border-[#ffffff10]">
+                <Text className={`font-bold ${portfolioXirr >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                  {portfolioXirr >= 0 ? '+' : ''}{portfolioXirr.toFixed(2)}%
+                </Text>
+                <Text className="text-[#64748b] text-[10px] ml-1 uppercase font-bold">XIRR</Text>
+              </View>
+            )}
           </View>
         </View>
 

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../api/client';
-import { LogOut, Calendar, PieChart, Settings, User } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function MoreScreen() {
   const [email, setEmail] = useState('');
@@ -36,7 +36,7 @@ export default function MoreScreen() {
         {/* Profile Card */}
         <View className="bg-gradient-to-r from-[#1e293b] to-[#0f172a] rounded-3xl p-6 border border-[#ffffff10] items-center">
           <View className="w-20 h-20 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30 items-center justify-center mb-3">
-            <User color="#60a5fa" size={40} />
+            <Feather name="user" color="#60a5fa" size={40} />
           </View>
           <Text className="text-white text-xl font-bold">{email || 'User'}</Text>
           <Text className="text-[#94a3b8] text-sm mt-1">Portfolio Tracker Premium</Text>
@@ -46,12 +46,12 @@ export default function MoreScreen() {
         <View className="mt-6">
           <Text className="text-white font-semibold text-lg mb-3 px-1">Insights</Text>
           <SectionButton 
-            icon={<PieChart color="#a855f7" size={24} />} 
+            icon={<Feather name="pie-chart" color="#a855f7" size={24} />} 
             title="Sector Performance" 
             subtitle="View portfolio breakdown by sector (Coming Soon)" 
           />
           <SectionButton 
-            icon={<Calendar color="#fb923c" size={24} />} 
+            icon={<Feather name="calendar" color="#fb923c" size={24} />} 
             title="Event Calendar" 
             subtitle="Upcoming earnings and macro events (Coming Soon)" 
           />
@@ -62,7 +62,7 @@ export default function MoreScreen() {
           <Text className="text-white font-semibold text-lg mb-3 px-1">Preferences</Text>
           <View className="bg-[#0f172a] p-4 rounded-2xl border border-[#ffffff0a] mb-4">
             <View className="flex-row items-center mb-2">
-              <Settings color="#94a3b8" size={18} />
+              <Feather name="settings" color="#94a3b8" size={18} />
               <Text className="text-white font-bold ml-2">API Connection</Text>
             </View>
             <Text className="text-[#64748b] text-xs mb-1">Current Endpoint</Text>
@@ -73,7 +73,7 @@ export default function MoreScreen() {
             onPress={handleLogout}
             className="bg-[#7f1d1d]/30 border border-[#ef4444]/30 rounded-2xl py-4 items-center justify-center flex-row"
           >
-            <LogOut color="#f87171" size={20} className="mr-2" />
+            <Feather name="log-out" color="#f87171" size={20} />
             <Text className="text-[#f87171] font-semibold text-base ml-2">Sign Out</Text>
           </TouchableOpacity>
         </View>

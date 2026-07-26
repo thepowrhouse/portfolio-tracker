@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
-import { LayoutDashboard, Wallet, Briefcase, Menu } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -28,28 +28,28 @@ export default function TabLayout() {
         name="dashboard"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <LayoutDashboard color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Feather name="grid" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="holdings"
         options={{
           title: 'Holdings',
-          tabBarIcon: ({ color, size }) => <Briefcase color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Feather name="briefcase" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="other_assets"
         options={{
           title: 'Other Assets',
-          tabBarIcon: ({ color, size }) => <Wallet color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Feather name="credit-card" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
           title: 'More',
-          tabBarIcon: ({ color, size }) => <Menu color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Feather name="menu" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
