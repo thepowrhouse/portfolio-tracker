@@ -11,6 +11,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: '1041866669271-gqio6aj9664bvtu9tetsckpedtjfbjk5.apps.googleusercontent.com',
+    iosClientId: '1041866669271-kn9491jkgn2oqc334umgis5n27qrojs1.apps.googleusercontent.com',
   });
 
   const [loading, setLoading] = React.useState(false);
