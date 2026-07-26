@@ -43,11 +43,13 @@ export interface Holding {
 
 export interface PortfolioState {
   holdings: Holding[];
-  net_worth: number;
-  day_change: number;
-  total_pnl: number;
-  day_change_percent: number;
-  total_pnl_percent: number;
+  net_worth_inr?: number;
+  net_worth_usd?: number;
+  net_worth?: number;
+  day_change?: number;
+  total_pnl?: number;
+  day_change_percent?: number;
+  total_pnl_percent?: number;
 }
 
 export const fetchPortfolio = async (email: string): Promise<PortfolioState> => {

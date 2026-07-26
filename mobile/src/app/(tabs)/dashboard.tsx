@@ -42,6 +42,14 @@ export default function DashboardScreen() {
     );
   }
 
+  const netWorth = data?.net_worth_inr ?? data?.net_worth ?? 0;
+  
+  const totalPnl = data?.total_pnl ?? data?.holdings?.reduce((sum, h) => sum + (h.pnl_absolute || 0), 0) ?? 0;
+  const dayChange = data?.day_change ?? data?.holdings?.reduce((sum, h) => sum + (h.day_change_absolute || 0), 0) ?? 0;
+  
+  const prevNetWorth = netWorth - dayChange;
+  const dayChangePercent = data?.day_change_percent ?? (prevNetWorth > 0 ? (dayChange / prevNetWorth) * 100 : 0);
+
   return (
     <ScrollView 
       className="flex-1 bg-[#111]"
@@ -52,15 +60,15 @@ export default function DashboardScreen() {
         <View className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-3xl p-6 shadow-lg border border-white/10">
           <Text className="text-white/70 text-sm font-medium mb-1">Total Net Worth</Text>
           <Text className="text-white text-4xl font-bold tracking-tight">
-            ₹{data?.net_worth?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) || '0'}
+            ₹{netWorth.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
           </Text>
           
           <View className="flex-row items-center mt-4">
-            <View className={`px-2 py-1 rounded-full ${data?.day_change && data.day_change >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-              <Text className={`font-semibold ${data?.day_change && data.day_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {data?.day_change && data.day_change >= 0 ? '+' : ''}
-                ₹{data?.day_change?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) || '0'} (
-                {data?.day_change_percent?.toFixed(2) || '0'}%)
+            <View className={`px-2 py-1 rounded-full ${dayChange >= 0 ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+              <Text className={`font-semibold ${dayChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {dayChange >= 0 ? '+' : ''}
+                ₹{dayChange.toLocaleString('en-IN', { maximumFractionDigits: 0 })} (
+                {dayChangePercent.toFixed(2)}%)
               </Text>
             </View>
             <Text className="text-white/60 text-xs ml-2">Today</Text>
@@ -71,9 +79,9 @@ export default function DashboardScreen() {
         <View className="flex-row justify-between gap-4 mt-2">
           <View className="flex-1 bg-[#1A1A1A] rounded-2xl p-4 border border-white/5">
             <Text className="text-white/60 text-xs mb-1">Total Returns</Text>
-            <Text className={`text-lg font-bold ${data?.total_pnl && data.total_pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {data?.total_pnl && data.total_pnl >= 0 ? '+' : ''}
-              ₹{data?.total_pnl?.toLocaleString('en-IN', { maximumFractionDigits: 0 }) || '0'}
+            <Text className={`text-lg font-bold ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {totalPnl >= 0 ? '+' : ''}
+              ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </Text>
           </View>
           
