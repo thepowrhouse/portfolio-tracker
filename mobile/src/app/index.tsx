@@ -2,32 +2,30 @@ import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { loginWithGoogleToken } from '../api/client';
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: '1041866669271-gqio6aj9664bvtu9tetsckpedtjfbjk5.apps.googleusercontent.com',
-    iosClientId: '1041866669271-kn9491jkgn2oqc334umgis5n27qrojs1.apps.googleusercontent.com',
-  });
-
   const [loading, setLoading] = React.useState(false);
 
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      handleGoogleLogin(id_token);
-    } else if (response?.type === 'error') {
-      Alert.alert('Authentication error', response.error?.message || 'Something went wrong');
-    }
-  }, [response]);
+    GoogleSignin.configure({
+      webClientId: '1041866669271-gqio6aj9664bvtu9tetsckpedtjfbjk5.apps.googleusercontent.com',
+      iosClientId: '1041866669271-kn9491jkgn2oqc334umgis5n27qrojs1.apps.googleusercontent.com',
+    });
+  }, []);
 
-  const handleGoogleLogin = async (idToken: string) => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
     try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.data?.idToken;
+
+      if (!idToken) {
+        throw new Error('No ID token found');
+      }
+
       const data = await loginWithGoogleToken(idToken);
       
       // Store the JWT token securely
@@ -37,7 +35,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)/dashboard');
     } catch (error: any) {
       console.error(error);
-      Alert.alert('Login Failed', error.response?.data?.detail || 'Unable to connect to the backend.');
+      Alert.alert('Login Failed', error.response?.data?.detail || error.message || 'Unable to connect to the backend.');
     } finally {
       setLoading(false);
     }
@@ -53,8 +51,7 @@ export default function LoginScreen() {
           <ActivityIndicator size="large" color="#ffffff" />
         ) : (
           <TouchableOpacity 
-            onPress={() => promptAsync()}
-            disabled={!request}
+            onPress={handleGoogleLogin}
             className="bg-white rounded-xl py-4 px-6 items-center justify-center flex-row w-full"
           >
             <Text className="text-black font-semibold text-lg">Sign in with Google</Text>

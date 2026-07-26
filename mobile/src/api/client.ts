@@ -41,8 +41,20 @@ export interface Holding {
   broker: string;
 }
 
+export interface OtherAsset {
+  id: string;
+  category: string;
+  name: string;
+  value: number;
+  currency: string;
+  invested_value?: number;
+  pnl_absolute?: number;
+  pnl_percent?: number;
+}
+
 export interface PortfolioState {
   holdings: Holding[];
+  other_assets?: OtherAsset[];
   net_worth_inr?: number;
   net_worth_usd?: number;
   net_worth?: number;
