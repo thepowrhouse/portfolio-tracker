@@ -177,43 +177,6 @@ export default function DashboardScreen() {
               )}
             </View>
           </View>
-          <LinearGradient
-            colors={['#1e293b', '#0f172a']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="absolute inset-0"
-          />
-          {/* Glowing Orbs */}
-          <View className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/10" />
-          <View className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-purple-500/10" />
-          
-          <View className="p-6 relative z-10">
-          <Text className="text-slate-400 text-sm font-semibold mb-1 tracking-wider uppercase">Total Net Worth</Text>
-          <Text className="text-white text-4xl font-extrabold tracking-tight drop-shadow-sm">
-            ₹{netWorth.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-          </Text>
-          
-          <View className="flex-row items-center mt-5">
-            <View className={`px-2.5 py-1.5 rounded-lg border ${dayChange >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
-              <Text className={`font-bold ${dayChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {dayChange >= 0 ? '+' : ''}
-                ₹{dayChange.toLocaleString('en-IN', { maximumFractionDigits: 0 })} (
-                {dayChangePercent.toFixed(2)}%)
-              </Text>
-            </View>
-            <Text className="text-slate-400 text-xs ml-2 font-semibold tracking-wide uppercase">Today</Text>
-            
-            {portfolioXirr !== null && (
-              <View className="ml-auto flex-row items-center bg-slate-900/50 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
-                <Text className={`font-bold ${portfolioXirr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {portfolioXirr >= 0 ? '+' : ''}{portfolioXirr.toFixed(2)}%
-                </Text>
-                <Text className="text-slate-500 text-[10px] ml-1 uppercase font-bold tracking-widest">XIRR</Text>
-              </View>
-            )}
-          </View>
-          </View>
-        </View>
 
           {/* Quick Stats Cards (Frosted Glass) */}
           <View className="flex-row justify-between gap-4">
