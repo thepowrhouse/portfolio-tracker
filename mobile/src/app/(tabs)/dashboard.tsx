@@ -134,7 +134,6 @@ export default function DashboardScreen() {
     .slice(0, 3);
 
   return (
-  return (
     <View className="flex-1 bg-slate-950">
       {/* Immersive Global Background */}
       <LinearGradient
