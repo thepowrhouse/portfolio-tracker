@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../api/client';
 import { Feather } from '@expo/vector-icons';
-import { Feather } from '@expo/vector-icons';
+
 
 export default function MoreScreen() {
   const [email, setEmail] = useState('');
