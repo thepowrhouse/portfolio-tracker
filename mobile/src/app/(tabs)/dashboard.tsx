@@ -134,13 +134,50 @@ export default function DashboardScreen() {
     .slice(0, 3);
 
   return (
-    <ScrollView 
-      className="flex-1 bg-slate-950"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-    >
-      <View className="p-4 space-y-6">
-        {/* Net Worth Card */}
-        <View className="rounded-3xl border border-slate-700/50 shadow-2xl overflow-hidden relative">
+  return (
+    <View className="flex-1 bg-slate-950">
+      {/* Immersive Global Background */}
+      <LinearGradient
+        colors={['#0f172a', '#020617']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        className="absolute inset-0"
+      />
+      {/* Global Glowing Orbs */}
+      <View className="absolute top-[-100] left-[-100] h-[350] w-[350] rounded-full bg-blue-500/15" />
+      <View className="absolute top-[200] right-[-100] h-[300] w-[300] rounded-full bg-purple-500/15" />
+      <View className="absolute bottom-[-100] left-[50] h-[300] w-[300] rounded-full bg-emerald-500/10" />
+
+      <ScrollView 
+        className="flex-1"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+      >
+        <View className="p-4 pt-8 space-y-8">
+          
+          {/* Floating Net Worth Header (No Card) */}
+          <View className="items-center z-10 mb-2">
+            <Text className="text-slate-400 text-sm font-semibold mb-2 tracking-widest uppercase">Total Net Worth</Text>
+            <Text className="text-white text-5xl font-extrabold tracking-tighter drop-shadow-lg mb-4">
+              ₹{netWorth.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </Text>
+            
+            <View className="flex-row items-center gap-3">
+              <View className={`px-4 py-2 rounded-full border backdrop-blur-md ${dayChange >= 0 ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-red-500/15 border-red-500/30'}`}>
+                <Text className={`font-bold text-sm ${dayChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {dayChange >= 0 ? '▲' : '▼'} ₹{Math.abs(dayChange).toLocaleString('en-IN', { maximumFractionDigits: 0 })} ({dayChangePercent.toFixed(2)}%) Today
+                </Text>
+              </View>
+              
+              {portfolioXirr !== null && (
+                <View className="flex-row items-center bg-slate-800/40 px-4 py-2 rounded-full border border-slate-700/50 backdrop-blur-md">
+                  <Text className="text-slate-400 text-xs uppercase font-bold tracking-widest mr-2">XIRR</Text>
+                  <Text className={`font-bold text-sm ${portfolioXirr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {portfolioXirr >= 0 ? '+' : ''}{portfolioXirr.toFixed(2)}%
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
           <LinearGradient
             colors={['#1e293b', '#0f172a']}
             start={{ x: 0, y: 0 }}
@@ -179,114 +216,138 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Quick Stats Grid */}
-        <View className="flex-row justify-between gap-4 mt-2">
-          <View className="flex-1 bg-slate-900/60 rounded-2xl p-4 border border-slate-800/80 shadow-lg">
-            <Text className="text-slate-400 text-xs mb-1 font-semibold tracking-wide uppercase">Total Returns</Text>
-            <Text className={`text-lg font-bold tracking-tight drop-shadow-sm ${totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {totalPnl >= 0 ? '+' : ''}
-              ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </Text>
-          </View>
-          
-          <View className="flex-1 bg-slate-900/60 rounded-2xl p-4 border border-slate-800/80 shadow-lg">
-            <Text className="text-slate-400 text-xs mb-1 font-semibold tracking-wide uppercase">Total Holdings</Text>
-            <Text className="text-white text-lg font-bold tracking-tight drop-shadow-sm">
-              {data?.holdings?.length || 0} Assets
-            </Text>
-          </View>
-        </View>
-
-        {/* Asset Allocation */}
-        <View className="mt-4">
-          <Text className="text-white font-bold text-lg mb-3 px-1">Asset Allocation</Text>
-          <View className="bg-slate-900/60 rounded-2xl border border-slate-800/80 p-4 flex-row flex-wrap gap-2 shadow-lg">
-            {Object.entries(allocation).map(([key, val]) => (
-              <View key={key} className="bg-slate-800/50 px-4 py-3 rounded-xl flex-1 min-w-[45%] border border-slate-700/30">
-                <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{key.replace('_', ' ')}</Text>
-                <Text className="text-white font-bold mt-1.5 text-base drop-shadow-sm">₹{Math.round(val as number).toLocaleString('en-IN')}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Performance by Broker */}
-        {Object.keys(brokerPerformance).length > 0 && (
-          <View className="mt-4">
-            <Text className="text-white font-bold text-lg mb-3 px-1">P&L by Broker</Text>
-            <View className="bg-slate-900/60 rounded-2xl border border-slate-800/80 p-4 shadow-lg">
-              {Object.entries(brokerPerformance).map(([broker, stats], idx, arr) => {
-                const pnlPercent = stats.invested > 0 ? (stats.pnl / stats.invested) * 100 : 0;
-                const brokerXirr = stats.investedWithXirr > 0 ? (stats.xirrSum / stats.investedWithXirr) : null;
-                const dayChangePercent = stats.prevCloseValue > 0 ? (stats.dayChange / stats.prevCloseValue) * 100 : 0;
-                return (
-                  <View key={broker} className={`py-4 flex-col gap-3 ${idx !== arr.length - 1 ? 'border-b border-slate-800/50' : ''}`}>
-                    <View className="flex-row justify-between items-center">
-                      <Text className="text-slate-200 font-bold capitalize text-base tracking-wide">{broker === 'rsu' ? 'RSU' : broker}</Text>
-                      <View className="flex-row items-center gap-1.5 bg-slate-950/40 px-2.5 py-1 rounded-md border border-slate-800/50">
-                        <Text className={`font-bold ${stats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {stats.pnl >= 0 ? '+' : ''}₹{Math.abs(stats.pnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </Text>
-                        <Text className={`text-[10px] font-semibold ${stats.pnl >= 0 ? 'text-emerald-500/80' : 'text-red-500/80'}`}>
-                          ({stats.pnl >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
-                        </Text>
-                      </View>
-                    </View>
-                    
-                    <View className="bg-slate-950/30 p-3.5 rounded-xl gap-2 mt-1 border border-slate-800/30">
-                      <View className="flex-row justify-between items-center">
-                        <View className="flex-1">
-                          <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Invested</Text>
-                          <Text className="text-slate-300 font-medium">₹{Math.round(stats.invested).toLocaleString('en-IN')}</Text>
-                        </View>
-                        <View className="flex-1 items-center">
-                          <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Current</Text>
-                          <Text className="text-white font-bold drop-shadow-sm">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
-                        </View>
-                        {brokerXirr !== null && (
-                          <View className="flex-1 items-end">
-                            <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">XIRR</Text>
-                            <Text className={`font-bold ${brokerXirr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {brokerXirr >= 0 ? '+' : ''}{brokerXirr.toFixed(2)}%
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <View className="border-t border-slate-800/50 pt-2.5 flex-row justify-between items-center">
-                        <Text className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">1D Change</Text>
-                        <Text className={`font-semibold ${stats.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {stats.dayChange >= 0 ? '+' : ''}₹{Math.abs(Math.round(stats.dayChange)).toLocaleString('en-IN')}
-                          <Text className="text-[10px] opacity-80"> ({stats.dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)</Text>
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
+          {/* Quick Stats Cards (Frosted Glass) */}
+          <View className="flex-row justify-between gap-4">
+            <View className="flex-1 rounded-3xl overflow-hidden shadow-xl border border-slate-700/40">
+              <BlurView intensity={40} tint="dark" className="p-5 flex-1 bg-slate-900/40">
+                <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mb-3">
+                  <Text className="text-emerald-400 font-bold">₹</Text>
+                </View>
+                <Text className="text-slate-400 text-[11px] mb-1 font-bold tracking-widest uppercase">Total Returns</Text>
+                <Text className={`text-xl font-bold tracking-tight ${totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {totalPnl >= 0 ? '+' : ''}
+                  ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </Text>
+              </BlurView>
+            </View>
+            
+            <View className="flex-1 rounded-3xl overflow-hidden shadow-xl border border-slate-700/40">
+              <BlurView intensity={40} tint="dark" className="p-5 flex-1 bg-slate-900/40">
+                <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center mb-3">
+                  <Text className="text-blue-400 font-bold">#</Text>
+                </View>
+                <Text className="text-slate-400 text-[11px] mb-1 font-bold tracking-widest uppercase">Total Holdings</Text>
+                <Text className="text-white text-xl font-bold tracking-tight">
+                  {data?.holdings?.length || 0} Assets
+                </Text>
+              </BlurView>
             </View>
           </View>
-        )}
 
-        {/* Top Movers */}
-        <View className="mt-4 mb-8">
-          <Text className="text-white font-bold text-lg mb-3 px-1">Top Movers</Text>
-          <View className="bg-slate-900/60 rounded-2xl border border-slate-800/80 p-4 shadow-lg">
-            {topGainers.map((h, i) => (
-              <View key={h.id} className={`flex-row justify-between items-center py-3.5 ${i !== topGainers.length - 1 ? 'border-b border-slate-800/50' : ''}`}>
-                <View>
-                  <Text className="text-white font-bold text-base tracking-wide">{h.ticker}</Text>
-                  <Text className="text-slate-400 text-xs font-medium mt-0.5">{h.company_name.substring(0, 25)}</Text>
-                </View>
-                <View className="items-end">
-                  <Text className="text-white font-bold tabular-nums drop-shadow-sm">₹{(h.current_price * (h.asset_class === 'us_equity' ? usdToInr : 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
-                  <Text className="text-emerald-400 text-xs font-bold mt-0.5">+{h.day_change_percent.toFixed(2)}%</Text>
-                </View>
-              </View>
-            ))}
+          {/* Asset Allocation */}
+          <View>
+            <Text className="text-white font-extrabold text-xl mb-4 px-1 tracking-tight">Asset Allocation</Text>
+            <View className="rounded-3xl overflow-hidden shadow-2xl border border-slate-700/40">
+              <BlurView intensity={40} tint="dark" className="p-5 flex-row flex-wrap gap-3 bg-slate-900/40">
+                {Object.entries(allocation).map(([key, val]) => (
+                  <View key={key} className="bg-slate-800/40 px-4 py-4 rounded-2xl flex-1 min-w-[45%] border border-slate-700/30 shadow-sm">
+                    <Text className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-1.5">{key.replace('_', ' ')}</Text>
+                    <Text className="text-white font-bold text-lg tracking-wide">₹{Math.round(val as number).toLocaleString('en-IN')}</Text>
+                  </View>
+                ))}
+              </BlurView>
+            </View>
           </View>
-        </View>
 
-      </View>
-    </ScrollView>
+          {/* Performance by Broker */}
+          {Object.keys(brokerPerformance).length > 0 && (
+            <View>
+              <Text className="text-white font-extrabold text-xl mb-4 px-1 tracking-tight">P&L by Broker</Text>
+              <View className="rounded-3xl overflow-hidden shadow-2xl border border-slate-700/40">
+                <BlurView intensity={40} tint="dark" className="p-2 bg-slate-900/40">
+                  {Object.entries(brokerPerformance).map(([broker, stats], idx, arr) => {
+                    const pnlPercent = stats.invested > 0 ? (stats.pnl / stats.invested) * 100 : 0;
+                    const brokerXirr = stats.investedWithXirr > 0 ? (stats.xirrSum / stats.investedWithXirr) : null;
+                    const dayChangePercent = stats.prevCloseValue > 0 ? (stats.dayChange / stats.prevCloseValue) * 100 : 0;
+                    return (
+                      <View key={broker} className={`p-4 flex-col gap-4 ${idx !== arr.length - 1 ? 'border-b border-slate-700/30' : ''}`}>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-white font-extrabold capitalize text-lg tracking-wide">{broker === 'rsu' ? 'RSU' : broker}</Text>
+                          <View className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${stats.pnl >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+                            <Text className={`font-bold text-sm ${stats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {stats.pnl >= 0 ? '+' : ''}₹{Math.abs(stats.pnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </Text>
+                            <Text className={`text-xs font-bold ${stats.pnl >= 0 ? 'text-emerald-500/80' : 'text-red-500/80'}`}>
+                              ({stats.pnl >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <View className="bg-slate-950/40 p-4 rounded-2xl gap-3 border border-slate-800/40">
+                          <View className="flex-row justify-between items-center">
+                            <View className="flex-1">
+                              <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Invested</Text>
+                              <Text className="text-slate-300 font-semibold tracking-wide">₹{Math.round(stats.invested).toLocaleString('en-IN')}</Text>
+                            </View>
+                            <View className="flex-1 items-center">
+                              <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">Current</Text>
+                              <Text className="text-white font-bold tracking-wide">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
+                            </View>
+                            {brokerXirr !== null && (
+                              <View className="flex-1 items-end">
+                                <Text className="text-slate-500 text-[10px] uppercase font-bold mb-1 tracking-widest">XIRR</Text>
+                                <Text className={`font-bold ${brokerXirr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {brokerXirr >= 0 ? '+' : ''}{brokerXirr.toFixed(2)}%
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          <View className="border-t border-slate-700/30 pt-3 flex-row justify-between items-center">
+                            <Text className="text-slate-400 text-xs uppercase font-bold tracking-widest">1D Change</Text>
+                            <Text className={`font-bold ${stats.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {stats.dayChange >= 0 ? '▲' : '▼'} ₹{Math.abs(Math.round(stats.dayChange)).toLocaleString('en-IN')}
+                              <Text className="text-xs opacity-90"> ({stats.dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)</Text>
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </BlurView>
+              </View>
+            </View>
+          )}
+
+          {/* Top Movers (Horizontal Scroll) */}
+          <View className="mb-8">
+            <Text className="text-white font-extrabold text-xl mb-4 px-1 tracking-tight">Top Movers</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 px-4 pb-4">
+              {topGainers.map((h, i) => (
+                <View key={h.id} className={`rounded-3xl overflow-hidden shadow-xl border border-slate-700/40 mr-4 w-48`}>
+                  <BlurView intensity={40} tint="dark" className="p-5 bg-slate-900/40 flex-1 justify-between">
+                    <View>
+                      <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mb-3">
+                        <Text className="text-emerald-400 font-bold text-lg">↑</Text>
+                      </View>
+                      <Text className="text-white font-extrabold text-lg tracking-wide" numberOfLines={1}>{h.ticker}</Text>
+                      <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 mb-4" numberOfLines={1}>{h.company_name}</Text>
+                    </View>
+                    <View>
+                      <Text className="text-white font-bold text-lg tabular-nums tracking-tight mb-1">
+                        ₹{(h.current_price * (h.asset_class === 'us_equity' ? usdToInr : 1)).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </Text>
+                      <View className="self-start px-2 py-1 bg-emerald-500/20 rounded-md border border-emerald-500/30">
+                        <Text className="text-emerald-400 text-xs font-bold">+{h.day_change_percent.toFixed(2)}%</Text>
+                      </View>
+                    </View>
+                  </BlurView>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+        </View>
+      </ScrollView>
+    </View>
   );
 }
