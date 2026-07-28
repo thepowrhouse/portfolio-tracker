@@ -3,7 +3,7 @@ import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, Mod
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPortfolio, PortfolioState, Holding, fetchRecommendations, StockRecommendation } from '../../api/client';
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { fetchHoldings, Holding } from '../../api/client';
 
 export default function HoldingsScreen() {
   const [data, setData] = useState<PortfolioState | null>(null);
@@ -119,21 +119,41 @@ export default function HoldingsScreen() {
     
     return (
       <Modal transparent visible={!!selectedHolding} animationType="slide" onRequestClose={() => setSelectedHolding(null)}>
-        <BlurView intensity={40} tint="dark" className="flex-1 justify-end">
-          <View className="flex-1 bg-slate-950/60 justify-end">
-            <View className="bg-slate-900 rounded-t-3xl border-t border-slate-700/50 p-6 max-h-[80%] shadow-2xl">
-              <View className="flex-row justify-between items-start mb-4">
-                <View>
-                  <Text className="text-white text-2xl font-extrabold tracking-tight">{selectedHolding.ticker}</Text>
-                  <Text className="text-slate-400 text-sm mt-1 font-medium">{selectedHolding.company_name}</Text>
-                </View>
-                <TouchableOpacity onPress={() => setSelectedHolding(null)} className="p-2 bg-slate-800 rounded-full border border-slate-700">
-                  <Feather name="x" size={20} color="#94a3b8" />
-                </TouchableOpacity>
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="bg-slate-900 rounded-t-3xl pt-2 pb-8 border-t border-slate-800/80 shadow-2xl">
+            <View className="items-center mb-4">
+              <View className="w-12 h-1.5 bg-slate-700/80 rounded-full" />
+            </View>
+            <View className="px-6 flex-row items-center justify-between mb-4 border-b border-slate-800 pb-4">
+              <Text className="text-white text-xl font-extrabold tracking-tight">Actions</Text>
+              <TouchableOpacity onPress={() => setSelectedHolding(null)}>
+                <Feather name="x" size={24} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity className="flex-row items-center px-6 py-4 border-b border-slate-800/50">
+              <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center mr-4">
+                <Feather name="plus-circle" size={20} color="#60a5fa" />
               </View>
-
+              <Text className="text-slate-200 text-lg font-semibold tracking-wide">Add Transaction</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity className="flex-row items-center px-6 py-4 border-b border-slate-800/50">
+              <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mr-4">
+                <Feather name="bar-chart-2" size={20} color="#34d399" />
+              </View>
+              <Text className="text-slate-200 text-lg font-semibold tracking-wide">View Performance</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity className="flex-row items-center px-6 py-4">
+              <View className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center mr-4">
+                <Feather name="trash-2" size={20} color="#f87171" />
+              </View>
+              <Text className="text-slate-200 text-lg font-semibold tracking-wide">Hide Asset</Text>
+            </TouchableOpacity>
+            
             {rec ? (
-              <ScrollView showsVerticalScrollIndicator={false} className="mb-4">
+              <ScrollView showsVerticalScrollIndicator={false} className="px-6 mt-4">
                 <View className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50 mb-4 shadow-lg">
                   <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">AI Verdict (Mid Term)</Text>
                   <Text className={`text-xl font-black mb-2 tracking-tight drop-shadow-sm ${rec.horizons['mid']?.recommendation === 'BUY' ? 'text-emerald-400' : rec.horizons['mid']?.recommendation === 'SELL' ? 'text-red-400' : 'text-amber-400'}`}>
@@ -160,7 +180,6 @@ export default function HoldingsScreen() {
                 <Text className="text-slate-500 font-medium tracking-wide">No analysis available for this asset yet.</Text>
               </View>
             )}
-          </View>
           </View>
         </BlurView>
       </Modal>

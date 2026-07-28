@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../api/client';
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 
 export default function MoreScreen() {
   const [email, setEmail] = useState('');
@@ -36,12 +36,7 @@ export default function MoreScreen() {
         
         {/* Profile Card */}
         <View className="rounded-3xl p-6 border border-slate-700/50 items-center shadow-2xl overflow-hidden relative">
-          <LinearGradient
-            colors={['#1e293b', '#0f172a']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="absolute inset-0"
-          />
+          <View className="absolute inset-0 bg-slate-800" />
           <View className="absolute -top-20 -left-20 h-48 w-48 rounded-full bg-blue-500/10" />
           
           <View className="w-20 h-20 rounded-full bg-blue-500/20 border border-blue-400/30 items-center justify-center mb-3 z-10 shadow-lg">

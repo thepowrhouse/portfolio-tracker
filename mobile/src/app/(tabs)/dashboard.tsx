@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPortfolio, PortfolioState } from '../../api/client';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 
 export default function DashboardScreen() {
   const [data, setData] = useState<PortfolioState | null>(null);
@@ -181,7 +180,7 @@ export default function DashboardScreen() {
           {/* Quick Stats Cards (Frosted Glass) */}
           <View className="flex-row justify-between gap-4">
             <View className="flex-1 rounded-3xl overflow-hidden shadow-xl border border-slate-700/40">
-              <BlurView intensity={40} tint="dark" className="p-5 flex-1 bg-slate-900/40">
+              <View className="p-5 flex-1 bg-slate-900/40">
                 <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mb-3">
                   <Text className="text-emerald-400 font-bold">₹</Text>
                 </View>
@@ -190,11 +189,11 @@ export default function DashboardScreen() {
                   {totalPnl >= 0 ? '+' : ''}
                   ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </Text>
-              </BlurView>
+              </View>
             </View>
             
             <View className="flex-1 rounded-3xl overflow-hidden shadow-xl border border-slate-700/40">
-              <BlurView intensity={40} tint="dark" className="p-5 flex-1 bg-slate-900/40">
+              <View className="p-5 flex-1 bg-slate-900/40">
                 <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center mb-3">
                   <Text className="text-blue-400 font-bold">#</Text>
                 </View>
@@ -202,7 +201,7 @@ export default function DashboardScreen() {
                 <Text className="text-white text-xl font-bold tracking-tight">
                   {data?.holdings?.length || 0} Assets
                 </Text>
-              </BlurView>
+              </View>
             </View>
           </View>
 
@@ -210,14 +209,14 @@ export default function DashboardScreen() {
           <View>
             <Text className="text-white font-extrabold text-xl mb-4 px-1 tracking-tight">Asset Allocation</Text>
             <View className="rounded-3xl overflow-hidden shadow-2xl border border-slate-700/40">
-              <BlurView intensity={40} tint="dark" className="p-5 flex-row flex-wrap gap-3 bg-slate-900/40">
+              <View className="p-5 flex-row flex-wrap gap-3 bg-slate-900/40">
                 {Object.entries(allocation).map(([key, val]) => (
                   <View key={key} className="bg-slate-800/40 px-4 py-4 rounded-2xl flex-1 min-w-[45%] border border-slate-700/30 shadow-sm">
                     <Text className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-1.5">{key.replace('_', ' ')}</Text>
                     <Text className="text-white font-bold text-lg tracking-wide">₹{Math.round(val as number).toLocaleString('en-IN')}</Text>
                   </View>
                 ))}
-              </BlurView>
+              </View>
             </View>
           </View>
 
@@ -226,7 +225,7 @@ export default function DashboardScreen() {
             <View>
               <Text className="text-white font-extrabold text-xl mb-4 px-1 tracking-tight">P&L by Broker</Text>
               <View className="rounded-3xl overflow-hidden shadow-2xl border border-slate-700/40">
-                <BlurView intensity={40} tint="dark" className="p-2 bg-slate-900/40">
+                <View className="p-2 bg-slate-900/40">
                   {Object.entries(brokerPerformance).map(([broker, stats], idx, arr) => {
                     const pnlPercent = stats.invested > 0 ? (stats.pnl / stats.invested) * 100 : 0;
                     const brokerXirr = stats.investedWithXirr > 0 ? (stats.xirrSum / stats.investedWithXirr) : null;
@@ -275,7 +274,7 @@ export default function DashboardScreen() {
                       </View>
                     );
                   })}
-                </BlurView>
+                </View>
               </View>
             </View>
           )}
@@ -286,7 +285,7 @@ export default function DashboardScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-4 px-4 pb-4">
               {topGainers.map((h, i) => (
                 <View key={h.id} className={`rounded-3xl overflow-hidden shadow-xl border border-slate-700/40 mr-4 w-48`}>
-                  <BlurView intensity={40} tint="dark" className="p-5 bg-slate-900/40 flex-1 justify-between">
+                  <View className="p-5 bg-slate-900/40 flex-1 justify-between">
                     <View>
                       <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center mb-3">
                         <Text className="text-emerald-400 font-bold text-lg">↑</Text>
@@ -302,7 +301,7 @@ export default function DashboardScreen() {
                         <Text className="text-emerald-400 text-xs font-bold">+{h.day_change_percent.toFixed(2)}%</Text>
                       </View>
                     </View>
-                  </BlurView>
+                  </View>
                 </View>
               ))}
             </ScrollView>
