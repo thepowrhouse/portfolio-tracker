@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { API_BASE_URL } from '../../api/client';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function MoreScreen() {
   const [email, setEmail] = useState('');
@@ -18,33 +19,41 @@ export default function MoreScreen() {
   };
 
   const SectionButton = ({ icon, title, subtitle, onPress }: { icon: React.ReactNode, title: string, subtitle: string, onPress?: () => void }) => (
-    <TouchableOpacity onPress={onPress} className="bg-[#0f172a] p-4 mb-3 rounded-2xl flex-row items-center border border-[#ffffff0a]">
-      <View className="w-12 h-12 rounded-xl bg-[#1e293b] items-center justify-center mr-4">
+    <TouchableOpacity onPress={onPress} className="bg-slate-900/60 p-4 mb-3 rounded-2xl flex-row items-center border border-slate-800/80 shadow-lg">
+      <View className="w-12 h-12 rounded-xl bg-slate-800/50 border border-slate-700/50 items-center justify-center mr-4 shadow-sm">
         {icon}
       </View>
       <View className="flex-1">
-        <Text className="text-white font-bold text-base">{title}</Text>
-        <Text className="text-[#64748b] text-xs mt-0.5">{subtitle}</Text>
+        <Text className="text-white font-bold text-base tracking-wide">{title}</Text>
+        <Text className="text-slate-400 text-xs mt-1 font-medium">{subtitle}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView className="flex-1 bg-[#0a0a0a]">
+    <ScrollView className="flex-1 bg-slate-950">
       <View className="p-4 space-y-6 pt-6">
         
         {/* Profile Card */}
-        <View className="bg-gradient-to-r from-[#1e293b] to-[#0f172a] rounded-3xl p-6 border border-[#ffffff10] items-center">
-          <View className="w-20 h-20 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30 items-center justify-center mb-3">
+        <View className="rounded-3xl p-6 border border-slate-700/50 items-center shadow-2xl overflow-hidden relative">
+          <LinearGradient
+            colors={['#1e293b', '#0f172a']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="absolute inset-0"
+          />
+          <View className="absolute -top-20 -left-20 h-48 w-48 rounded-full bg-blue-500/10" />
+          
+          <View className="w-20 h-20 rounded-full bg-blue-500/20 border border-blue-400/30 items-center justify-center mb-3 z-10 shadow-lg">
             <Feather name="user" color="#60a5fa" size={40} />
           </View>
-          <Text className="text-white text-xl font-bold">{email || 'User'}</Text>
-          <Text className="text-[#94a3b8] text-sm mt-1">Portfolio Tracker Premium</Text>
+          <Text className="text-white text-xl font-extrabold tracking-tight z-10">{email || 'User'}</Text>
+          <Text className="text-slate-400 text-sm mt-1 font-semibold tracking-wide uppercase z-10">Portfolio Tracker Premium</Text>
         </View>
 
         {/* Features */}
         <View className="mt-6">
-          <Text className="text-white font-semibold text-lg mb-3 px-1">Insights</Text>
+          <Text className="text-white font-bold text-lg mb-3 px-1 tracking-wide">Insights</Text>
           <SectionButton 
             icon={<Feather name="pie-chart" color="#a855f7" size={24} />} 
             title="Sector Performance" 
@@ -58,23 +67,23 @@ export default function MoreScreen() {
         </View>
 
         {/* Settings */}
-        <View className="mt-4">
-          <Text className="text-white font-semibold text-lg mb-3 px-1">Preferences</Text>
-          <View className="bg-[#0f172a] p-4 rounded-2xl border border-[#ffffff0a] mb-4">
-            <View className="flex-row items-center mb-2">
+        <View className="mt-4 mb-8">
+          <Text className="text-white font-bold text-lg mb-3 px-1 tracking-wide">Preferences</Text>
+          <View className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 mb-4 shadow-lg">
+            <View className="flex-row items-center mb-3">
               <Feather name="settings" color="#94a3b8" size={18} />
-              <Text className="text-white font-bold ml-2">API Connection</Text>
+              <Text className="text-white font-bold ml-2 tracking-wide">API Connection</Text>
             </View>
-            <Text className="text-[#64748b] text-xs mb-1">Current Endpoint</Text>
-            <Text className="text-white text-sm bg-[#1e293b] p-2 rounded-lg border border-[#ffffff0a]">{API_BASE_URL}</Text>
+            <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1.5">Current Endpoint</Text>
+            <Text className="text-slate-300 text-sm bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/50 font-medium">{API_BASE_URL}</Text>
           </View>
           
           <TouchableOpacity 
             onPress={handleLogout}
-            className="bg-[#7f1d1d]/30 border border-[#ef4444]/30 rounded-2xl py-4 items-center justify-center flex-row"
+            className="bg-red-500/10 border border-red-500/20 rounded-2xl py-4 items-center justify-center flex-row shadow-sm"
           >
             <Feather name="log-out" color="#f87171" size={20} />
-            <Text className="text-[#f87171] font-semibold text-base ml-2">Sign Out</Text>
+            <Text className="text-red-400 font-bold text-base ml-2 tracking-wide">Sign Out</Text>
           </TouchableOpacity>
         </View>
 

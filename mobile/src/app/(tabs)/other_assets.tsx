@@ -43,24 +43,24 @@ export default function OtherAssetsScreen() {
 
   const renderItem = ({ item }: { item: OtherAsset }) => {
     return (
-      <View className="bg-[#0f172a] p-5 mb-4 rounded-2xl flex-row items-center border border-[#ffffff0a] mx-4 shadow-lg">
-        <View className="w-12 h-12 rounded-2xl bg-[#1e293b] items-center justify-center mr-4">
+      <View className="bg-slate-900/60 p-5 mb-4 rounded-2xl flex-row items-center border border-slate-800/80 mx-4 shadow-lg">
+        <View className="w-12 h-12 rounded-2xl bg-slate-800/50 border border-slate-700/50 items-center justify-center mr-4 shadow-sm">
           {getIconForCategory(item.category)}
         </View>
         
         <View className="flex-1">
-          <Text className="text-[#94a3b8] text-xs font-bold uppercase tracking-wider mb-1">{item.category.replace('_', ' ')}</Text>
-          <Text className="text-white font-bold text-lg">{item.name}</Text>
+          <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">{item.category.replace('_', ' ')}</Text>
+          <Text className="text-white font-bold text-lg tracking-wide">{item.name}</Text>
         </View>
 
         <View className="items-end">
-          <Text className="text-white font-bold text-lg">
+          <Text className="text-white font-bold text-lg tabular-nums drop-shadow-sm">
             {item.currency === "USD" ? "$" : "₹"}{item.value.toLocaleString(item.currency === "USD" ? "en-US" : "en-IN", { maximumFractionDigits: 0 })}
           </Text>
-          {item.pnl_absolute && item.pnl_percent && (
-             <Text className={`text-xs font-semibold mt-1 ${item.pnl_absolute >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+          {item.pnl_absolute != null && item.pnl_percent != null && (
+             <Text className={`text-xs font-semibold mt-1 ${item.pnl_absolute >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                {item.pnl_absolute >= 0 ? '+' : ''}
-               {item.currency === "USD" ? "$" : "₹"}{item.pnl_absolute.toLocaleString(item.currency === "USD" ? "en-US" : "en-IN", { maximumFractionDigits: 0 })} ({item.pnl_percent.toFixed(2)}%)
+               {item.currency === "USD" ? "$" : "₹"}{Math.abs(item.pnl_absolute).toLocaleString(item.currency === "USD" ? "en-US" : "en-IN", { maximumFractionDigits: 0 })} ({item.pnl_percent.toFixed(2)}%)
              </Text>
           )}
         </View>
@@ -69,7 +69,7 @@ export default function OtherAssetsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#0a0a0a]">
+    <View className="flex-1 bg-slate-950">
       <FlatList
         data={data?.other_assets || []}
         keyExtractor={(item) => item.id}
@@ -78,9 +78,9 @@ export default function OtherAssetsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
         ListEmptyComponent={
           <View className="p-8 items-center justify-center mt-20">
-            <Feather name="credit-card" color="#334155" size={48} />
-            <Text className="text-[#64748b] font-medium text-lg mt-4">No other assets found.</Text>
-            <Text className="text-[#475569] text-sm text-center mt-2">Go to the web dashboard to add them.</Text>
+            <Feather name="credit-card" color="#475569" size={48} />
+            <Text className="text-slate-400 font-medium text-lg mt-4 tracking-wide">No other assets found.</Text>
+            <Text className="text-slate-500 text-sm text-center mt-2">Go to the web dashboard to add them.</Text>
           </View>
         }
       />

@@ -8,19 +8,19 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#0a0a0a',
+          backgroundColor: '#020617', // slate-950
           borderBottomWidth: 1,
-          borderBottomColor: '#ffffff10',
+          borderBottomColor: '#1e293b', // slate-800
         },
         headerTintColor: '#fff',
         tabBarStyle: {
-          backgroundColor: '#0a0a0a',
-          borderTopColor: '#ffffff10',
+          backgroundColor: '#020617',
+          borderTopColor: '#1e293b',
           paddingTop: 8,
           paddingBottom: 8,
           height: 60,
         },
-        tabBarActiveTintColor: '#34d399', // Emerald 400
+        tabBarActiveTintColor: '#60a5fa', // blue-400
         tabBarInactiveTintColor: '#64748b',
       }}
     >
