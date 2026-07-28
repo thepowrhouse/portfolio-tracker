@@ -239,10 +239,7 @@ function OtherAssetsContent() {
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2 transition-opacity">
                             <button
-                              onClick={() => {
-                                setEditingAsset(item);
-                                handleOpenModal(activeCategory);
-                              }}
+                              onClick={() => handleOpenModal(activeCategory, item)}
                               className="rounded-lg p-2 text-slate-400 hover:bg-blue-500/10 hover:text-blue-400 transition-colors"
                             >
                               <Edit2 className="h-4 w-4" />
