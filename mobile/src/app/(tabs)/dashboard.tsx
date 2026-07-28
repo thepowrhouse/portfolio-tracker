@@ -219,30 +219,32 @@ export default function DashboardScreen() {
                       </View>
                     </View>
                     
-                    <View className="flex-row justify-between items-center bg-[#0a0a0a]/50 p-2.5 rounded-lg">
-                      <View>
-                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Invested</Text>
-                        <Text className="text-slate-300 font-medium">₹{Math.round(stats.invested).toLocaleString('en-IN')}</Text>
+                    <View className="bg-[#0a0a0a]/50 p-3 rounded-lg gap-2 mt-1">
+                      <View className="flex-row justify-between items-center">
+                        <View className="flex-1">
+                          <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Invested</Text>
+                          <Text className="text-slate-300 font-medium">₹{Math.round(stats.invested).toLocaleString('en-IN')}</Text>
+                        </View>
+                        <View className="flex-1 items-center">
+                          <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Current</Text>
+                          <Text className="text-white font-bold">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
+                        </View>
+                        {brokerXirr !== null && (
+                          <View className="flex-1 items-end">
+                            <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">XIRR</Text>
+                            <Text className={`font-bold ${brokerXirr >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                              {brokerXirr >= 0 ? '+' : ''}{brokerXirr.toFixed(2)}%
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                      <View>
-                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Current</Text>
-                        <Text className="text-white font-bold">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
-                      </View>
-                      <View>
-                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">1D</Text>
+                      <View className="border-t border-[#ffffff0a] pt-2 flex-row justify-between items-center">
+                        <Text className="text-[#64748b] text-[10px] uppercase font-bold">1D Change</Text>
                         <Text className={`font-medium ${stats.dayChange >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                           {stats.dayChange >= 0 ? '+' : ''}₹{Math.abs(Math.round(stats.dayChange)).toLocaleString('en-IN')}
-                          <Text className="text-[10px] opacity-80"> ({stats.dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)</Text>
+                          <Text className="text-xs opacity-80"> ({stats.dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)</Text>
                         </Text>
                       </View>
-                      {brokerXirr !== null && (
-                        <View className="items-end">
-                          <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">XIRR</Text>
-                          <Text className={`font-bold ${brokerXirr >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
-                            {brokerXirr >= 0 ? '+' : ''}{brokerXirr.toFixed(2)}%
-                          </Text>
-                        </View>
-                      )}
                     </View>
                   </View>
                 );
