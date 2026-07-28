@@ -3,7 +3,7 @@ import { View, Text, FlatList, RefreshControl, ScrollView, TouchableOpacity, Mod
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPortfolio, PortfolioState, Holding, fetchRecommendations, StockRecommendation } from '../../api/client';
 import { Feather } from '@expo/vector-icons';
-import { fetchHoldings, Holding } from '../../api/client';
+
 
 export default function HoldingsScreen() {
   const [data, setData] = useState<PortfolioState | null>(null);
