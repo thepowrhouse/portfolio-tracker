@@ -19,7 +19,7 @@ export default function MoreScreen() {
   };
 
   const SectionButton = ({ icon, title, subtitle, onPress }: { icon: React.ReactNode, title: string, subtitle: string, onPress?: () => void }) => (
-    <TouchableOpacity onPress={onPress} className="bg-slate-900/60 p-4 mb-3 rounded-2xl flex-row items-center border border-slate-800/80 shadow-lg">
+    <TouchableOpacity onPress={onPress} className="bg-slate-900/40 p-4 mb-3 rounded-2xl flex-row items-center border border-slate-700/30 shadow-lg">
       <View className="w-12 h-12 rounded-xl bg-slate-800/50 border border-slate-700/50 items-center justify-center mr-4 shadow-sm">
         {icon}
       </View>
@@ -31,13 +31,19 @@ export default function MoreScreen() {
   );
 
   return (
-    <ScrollView className="flex-1 bg-slate-950">
-      <View className="p-4 space-y-6 pt-6">
-        
-        {/* Profile Card */}
-        <View className="rounded-3xl p-6 border border-slate-700/50 items-center shadow-2xl overflow-hidden relative">
-          <View className="absolute inset-0 bg-slate-800" />
-          <View className="absolute -top-20 -left-20 h-48 w-48 rounded-full bg-blue-500/10" />
+    <View className="flex-1 bg-slate-950">
+      {/* Global Glowing Orbs */}
+      <View className="absolute top-[-100] left-[-100] h-[350] w-[350] rounded-full bg-blue-500/15" />
+      <View className="absolute top-[200] right-[-100] h-[300] w-[300] rounded-full bg-purple-500/15" />
+      <View className="absolute bottom-[-100] left-[50] h-[300] w-[300] rounded-full bg-emerald-500/10" />
+
+      <ScrollView className="flex-1 z-10">
+        <View className="p-4 space-y-6 pt-6">
+          
+          {/* Profile Card */}
+          <View className="rounded-3xl p-6 border border-slate-700/40 items-center shadow-2xl overflow-hidden relative">
+            <View className="absolute inset-0 bg-slate-900/40" />
+            <View className="absolute -top-20 -left-20 h-48 w-48 rounded-full bg-blue-500/10" />
           
           <View className="w-20 h-20 rounded-full bg-blue-500/20 border border-blue-400/30 items-center justify-center mb-3 z-10 shadow-lg">
             <Feather name="user" color="#60a5fa" size={40} />
@@ -64,7 +70,7 @@ export default function MoreScreen() {
         {/* Settings */}
         <View className="mt-4 mb-8">
           <Text className="text-white font-bold text-lg mb-3 px-1 tracking-wide">Preferences</Text>
-          <View className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 mb-4 shadow-lg">
+          <View className="bg-slate-900/40 p-4 rounded-2xl border border-slate-700/30 mb-4 shadow-lg">
             <View className="flex-row items-center mb-3">
               <Feather name="settings" color="#94a3b8" size={18} />
               <Text className="text-white font-bold ml-2 tracking-wide">API Connection</Text>
@@ -82,7 +88,8 @@ export default function MoreScreen() {
           </TouchableOpacity>
         </View>
 
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }

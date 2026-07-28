@@ -70,7 +70,7 @@ export default function HoldingsScreen() {
     return (
       <TouchableOpacity 
         onPress={() => setSelectedHolding(item)}
-        className="bg-slate-900/60 p-4 mb-3 rounded-2xl flex-row justify-between items-center border border-slate-800/80 mx-4 shadow-lg"
+        className="bg-slate-900/40 p-4 mb-3 rounded-2xl flex-row justify-between items-center border border-slate-700/30 mx-4 shadow-lg"
       >
         <View className="flex-row items-center flex-1">
           <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${isDayPositive ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
@@ -188,15 +188,20 @@ export default function HoldingsScreen() {
 
   return (
     <View className="flex-1 bg-slate-950">
-      <View className="pt-4 pb-2">
+      {/* Global Glowing Orbs */}
+      <View className="absolute top-[-100] left-[-100] h-[350] w-[350] rounded-full bg-blue-500/15" />
+      <View className="absolute top-[200] right-[-100] h-[300] w-[300] rounded-full bg-purple-500/15" />
+      <View className="absolute bottom-[-100] left-[50] h-[300] w-[300] rounded-full bg-emerald-500/10" />
+
+      <View className="pt-4 pb-2 z-10">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
           {assetClasses.map(ac => (
             <TouchableOpacity 
               key={ac} 
               onPress={() => setFilter(ac)}
-              className={`mr-2 px-4 py-2 rounded-full border ${filter === ac ? 'bg-blue-500/20 border-blue-500/50' : 'bg-slate-900 border-slate-800'}`}
+              className={`mr-2 px-5 py-2.5 rounded-full border backdrop-blur-md ${filter === ac ? 'bg-blue-500/20 border-blue-500/40' : 'bg-slate-900/40 border-slate-700/40'}`}
             >
-              <Text className={`font-bold tracking-wide ${filter === ac ? 'text-blue-400' : 'text-slate-400'}`}>
+              <Text className={`font-bold tracking-widest text-xs uppercase ${filter === ac ? 'text-blue-400' : 'text-slate-400'}`}>
                 {ac.replace('_', ' ')}
               </Text>
             </TouchableOpacity>

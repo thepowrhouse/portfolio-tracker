@@ -43,7 +43,7 @@ export default function OtherAssetsScreen() {
 
   const renderItem = ({ item }: { item: OtherAsset }) => {
     return (
-      <View className="bg-slate-900/60 p-5 mb-4 rounded-2xl flex-row items-center border border-slate-800/80 mx-4 shadow-lg">
+      <View className="bg-slate-900/40 p-5 mb-4 rounded-2xl flex-row items-center border border-slate-700/30 mx-4 shadow-lg">
         <View className="w-12 h-12 rounded-2xl bg-slate-800/50 border border-slate-700/50 items-center justify-center mr-4 shadow-sm">
           {getIconForCategory(item.category)}
         </View>
@@ -70,7 +70,13 @@ export default function OtherAssetsScreen() {
 
   return (
     <View className="flex-1 bg-slate-950">
+      {/* Global Glowing Orbs */}
+      <View className="absolute top-[-100] left-[-100] h-[350] w-[350] rounded-full bg-blue-500/15" />
+      <View className="absolute top-[200] right-[-100] h-[300] w-[300] rounded-full bg-purple-500/15" />
+      <View className="absolute bottom-[-100] left-[50] h-[300] w-[300] rounded-full bg-emerald-500/10" />
+
       <FlatList
+        className="z-10"
         data={data?.other_assets || []}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
