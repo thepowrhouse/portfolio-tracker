@@ -94,6 +94,27 @@ export default function DashboardScreen() {
     return acc;
   }, {}) || {};
 
+  // Calculate Broker Performance
+  const brokerPerformance = data?.holdings?.reduce((acc: Record<string, { invested: number, pnl: number, currentValue: number, xirrSum: number, investedWithXirr: number }>, h) => {
+    const broker = h.broker || 'unknown';
+    if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, currentValue: 0, xirrSum: 0, investedWithXirr: 0 };
+    
+    let multiplier = h.asset_class === 'us_equity' ? usdToInr : 1;
+    let invested = h.avg_price * h.quantity * multiplier;
+    let currentVal = (h.current_price || h.avg_price) * h.quantity * multiplier;
+    
+    acc[broker].invested += invested;
+    acc[broker].currentValue += currentVal;
+    acc[broker].pnl += (currentVal - invested);
+    
+    if (h.xirr != null) {
+      acc[broker].xirrSum += h.xirr * invested;
+      acc[broker].investedWithXirr += invested;
+    }
+    
+    return acc;
+  }, {}) || {};
+
   // Sort top movers
   const topGainers = [...(data?.holdings || [])]
     .filter(h => h.day_change_percent > 0)
@@ -169,6 +190,53 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+
+        {/* Performance by Broker */}
+        {Object.keys(brokerPerformance).length > 0 && (
+          <View className="mt-2">
+            <Text className="text-white font-semibold text-lg mb-3">P&L by Broker</Text>
+            <View className="bg-[#0f172a] rounded-2xl border border-[#ffffff0a] p-4">
+              {Object.entries(brokerPerformance).map(([broker, stats], idx, arr) => {
+                const pnlPercent = stats.invested > 0 ? (stats.pnl / stats.invested) * 100 : 0;
+                const brokerXirr = stats.investedWithXirr > 0 ? (stats.xirrSum / stats.investedWithXirr) : null;
+                return (
+                  <View key={broker} className={`py-3 flex-col gap-2 ${idx !== arr.length - 1 ? 'border-b border-[#ffffff0a]' : ''}`}>
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-white font-bold capitalize">{broker === 'rsu' ? 'RSU' : broker}</Text>
+                      <View className="flex-row items-center gap-1.5 bg-[#1e293b] px-2 py-1 rounded-md border border-[#ffffff0a]">
+                        <Text className={`font-bold ${stats.pnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                          {stats.pnl >= 0 ? '+' : ''}₹{Math.abs(stats.pnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </Text>
+                        <Text className={`text-[10px] font-medium ${stats.pnl >= 0 ? 'text-[#34d399]/80' : 'text-[#f87171]/80'}`}>
+                          ({stats.pnl >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View className="flex-row justify-between items-center bg-[#0a0a0a]/50 p-2.5 rounded-lg">
+                      <View>
+                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Invested</Text>
+                        <Text className="text-slate-300 font-medium">₹{Math.round(stats.invested).toLocaleString('en-IN')}</Text>
+                      </View>
+                      <View>
+                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Current</Text>
+                        <Text className="text-white font-bold">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
+                      </View>
+                      {brokerXirr !== null && (
+                        <View className="items-end">
+                          <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">XIRR</Text>
+                          <Text className={`font-bold ${brokerXirr >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                            {brokerXirr >= 0 ? '+' : ''}{brokerXirr.toFixed(2)}%
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Top Movers */}
         <View className="mt-2 mb-6">
