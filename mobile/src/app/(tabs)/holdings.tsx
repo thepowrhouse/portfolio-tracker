@@ -181,7 +181,7 @@ export default function HoldingsScreen() {
               </View>
             )}
           </View>
-        </BlurView>
+        </View>
       </Modal>
     );
   };
