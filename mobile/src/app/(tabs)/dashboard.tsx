@@ -95,9 +95,9 @@ export default function DashboardScreen() {
   }, {}) || {};
 
   // Calculate Broker Performance
-  const brokerPerformance = data?.holdings?.reduce((acc: Record<string, { invested: number, pnl: number, currentValue: number, xirrSum: number, investedWithXirr: number }>, h) => {
+  const brokerPerformance = data?.holdings?.reduce((acc: Record<string, { invested: number, pnl: number, currentValue: number, xirrSum: number, investedWithXirr: number, dayChange: number, prevCloseValue: number }>, h) => {
     const broker = h.broker || 'unknown';
-    if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, currentValue: 0, xirrSum: 0, investedWithXirr: 0 };
+    if (!acc[broker]) acc[broker] = { invested: 0, pnl: 0, currentValue: 0, xirrSum: 0, investedWithXirr: 0, dayChange: 0, prevCloseValue: 0 };
     
     let multiplier = h.asset_class === 'us_equity' ? usdToInr : 1;
     let invested = h.avg_price * h.quantity * multiplier;
@@ -106,6 +106,11 @@ export default function DashboardScreen() {
     acc[broker].invested += invested;
     acc[broker].currentValue += currentVal;
     acc[broker].pnl += (currentVal - invested);
+    
+    if (h.day_change_absolute != null) {
+      acc[broker].dayChange += (h.day_change_absolute * multiplier);
+      acc[broker].prevCloseValue += (currentVal - (h.day_change_absolute * multiplier));
+    }
     
     if (h.xirr != null) {
       acc[broker].xirrSum += h.xirr * invested;
@@ -199,6 +204,7 @@ export default function DashboardScreen() {
               {Object.entries(brokerPerformance).map(([broker, stats], idx, arr) => {
                 const pnlPercent = stats.invested > 0 ? (stats.pnl / stats.invested) * 100 : 0;
                 const brokerXirr = stats.investedWithXirr > 0 ? (stats.xirrSum / stats.investedWithXirr) : null;
+                const dayChangePercent = stats.prevCloseValue > 0 ? (stats.dayChange / stats.prevCloseValue) * 100 : 0;
                 return (
                   <View key={broker} className={`py-3 flex-col gap-2 ${idx !== arr.length - 1 ? 'border-b border-[#ffffff0a]' : ''}`}>
                     <View className="flex-row justify-between items-center">
@@ -221,6 +227,13 @@ export default function DashboardScreen() {
                       <View>
                         <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">Current</Text>
                         <Text className="text-white font-bold">₹{Math.round(stats.currentValue).toLocaleString('en-IN')}</Text>
+                      </View>
+                      <View>
+                        <Text className="text-[#64748b] text-[10px] uppercase font-bold mb-0.5">1D</Text>
+                        <Text className={`font-medium ${stats.dayChange >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                          {stats.dayChange >= 0 ? '+' : ''}₹{Math.abs(Math.round(stats.dayChange)).toLocaleString('en-IN')}
+                          <Text className="text-[10px] opacity-80"> ({stats.dayChange >= 0 ? '+' : ''}{dayChangePercent.toFixed(2)}%)</Text>
+                        </Text>
                       </View>
                       {brokerXirr !== null && (
                         <View className="items-end">
